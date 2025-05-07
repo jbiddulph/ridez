@@ -20,10 +20,22 @@ export default defineNuxtConfig({
     prerender: {
       crawlLinks: true,
       routes: ['/']
+    },
+    output: {
+      dir: './dist',
+      publicDir: './dist'
     }
   },
-  ssr: false,
+  ssr: true,
   app: {
-    buildAssetsDir: '/_nuxt/'
+    baseURL: '',
+    buildAssetsDir: '/_nuxt/',
+    head: {
+      title: 'Ridez',
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+      ]
+    }
   }
 })

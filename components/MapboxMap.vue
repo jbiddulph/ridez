@@ -57,6 +57,83 @@
         </div>
       </div>
     </div>
+
+    <!-- End Trip Modal -->
+    <div v-if="showEndTripModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h3 class="text-xl font-bold mb-4">End Trip Details</h3>
+        <form @submit.prevent="submitEndTripDetails" class="space-y-4">
+          <div>
+            <label for="transportType" class="block text-sm font-medium text-gray-700 mb-2">Transport Type</label>
+            <select
+              id="transportType"
+              v-model="endTripDetails.transport_type"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select transport type</option>
+              <option value="walk">Walk</option>
+              <option value="cycle">Cycle</option>
+              <option value="drive">Drive</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="transactionType" class="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
+            <select
+              id="transactionType"
+              v-model="endTripDetails.transaction_type"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Select transaction type</option>
+              <option value="spending">Spending</option>
+              <option value="earning">Earning</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="amount" class="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+            <input
+              id="amount"
+              v-model="endTripDetails.amount"
+              type="number"
+              step="0.01"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter amount"
+            />
+          </div>
+
+          <div>
+            <label for="notes" class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <textarea
+              id="notes"
+              v-model="endTripDetails.notes"
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Add any notes about the trip"
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end space-x-3">
+            <button
+              type="button"
+              @click="cancelEndTrip"
+              class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            >
+              Save Trip Details
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -85,6 +162,13 @@ const currentRideId = ref(null)
 const markers = ref([])
 const isFollowing = ref(false)
 const authReady = ref(false)
+const showEndTripModal = ref(false)
+const endTripDetails = ref({
+  transport_type: '',
+  transaction_type: '',
+  amount: '',
+  notes: ''
+})
 
 // Watch for user changes
 watch(user, (newUser) => {
@@ -198,6 +282,8 @@ const handlePositionUpdate = async (position) => {
         map.value.flyTo({
           center: [longitude, latitude],
           zoom: 18,
+          pitch: 60,
+          bearing: map.value.getBearing(),
           essential: true,
           duration: 1000
         })
@@ -240,15 +326,28 @@ const startTrip = async () => {
     isFollowing.value = true
     showTitleInput.value = false
 
-    // Zoom in and center on current location
+    // Get current position and heading
     const position = await Geolocation.getCurrentPosition({
       enableHighAccuracy: true,
       timeout: 5000
     })
 
+    // Get device orientation if available
+    let bearing = 0
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', (event) => {
+        if (event.alpha !== null) {
+          bearing = event.alpha
+        }
+      })
+    }
+
+    // Update map view with 3D perspective
     map.value.flyTo({
       center: [position.coords.longitude, position.coords.latitude],
       zoom: 18,
+      pitch: 60,
+      bearing: bearing,
       essential: true,
       duration: 2000
     })
@@ -313,22 +412,125 @@ const stopTrip = async () => {
     watchId.value = null
   }
 
-  // Remove all green markers from the map
-  markers.value.forEach(marker => marker.remove())
-  markers.value = []
+  // Show the end trip modal instead of immediately stopping
+  showEndTripModal.value = true
+}
 
-  // Reset map view
-  isFollowing.value = false
-  map.value.flyTo({
-    zoom: 12,
-    duration: 2000
-  })
+// Add new function to handle end trip form submission
+const submitEndTripDetails = async () => {
+  try {
+    if (!currentRideId.value) {
+      throw new Error('No active ride found')
+    }
 
-  lastPosition.value = null
-  sequenceNumber.value = 0
-  currentRideId.value = null
-  isTracking.value = false
-  rideTitle.value = ''
+    // Log the raw input values
+    console.log('Raw input values:', endTripDetails.value)
+
+    // Format and validate the data
+    const formattedData = {
+      end_time: new Date().toISOString(),
+      transport_type: String(endTripDetails.value.transport_type || '').toLowerCase().trim(),
+      transaction_type: String(endTripDetails.value.transaction_type || '').toLowerCase().trim(),
+      amount: endTripDetails.value.amount ? parseFloat(endTripDetails.value.amount) : 0,
+      notes: String(endTripDetails.value.notes || '').trim()
+    }
+
+    // Log the formatted data
+    console.log('Formatted data:', formattedData)
+
+    // Validate transport type
+    if (!formattedData.transport_type || !['walk', 'cycle', 'drive'].includes(formattedData.transport_type)) {
+      throw new Error('Please select a valid transport type (walk, cycle, or drive)')
+    }
+
+    // Validate transaction type
+    if (!formattedData.transaction_type || !['spending', 'earning'].includes(formattedData.transaction_type)) {
+      throw new Error('Please select a valid transaction type (spending or earning)')
+    }
+
+    // Log the update attempt
+    console.log('Attempting to update ride:', {
+      rideId: currentRideId.value,
+      formattedData
+    })
+
+    // First, verify the ride exists
+    const { data: existingRide, error: fetchError } = await client
+      .from('ridez_rides')
+      .select('*')
+      .eq('id', currentRideId.value)
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching ride:', fetchError)
+      throw new Error('Failed to verify ride exists')
+    }
+
+    if (!existingRide) {
+      throw new Error('Ride not found')
+    }
+
+    console.log('Found existing ride:', existingRide)
+
+    // Perform the update
+    const { data, error: updateError } = await client
+      .from('ridez_rides')
+      .update(formattedData)
+      .eq('id', currentRideId.value)
+      .select()
+
+    if (updateError) {
+      console.error('Update error:', updateError)
+      throw new Error(`Failed to update ride: ${updateError.message}`)
+    }
+
+    if (!data || data.length === 0) {
+      throw new Error('Failed to update ride details')
+    }
+
+    console.log('Successfully updated ride:', data[0])
+
+    // Reset the form and close modal
+    endTripDetails.value = {
+      transport_type: '',
+      transaction_type: '',
+      amount: '',
+      notes: ''
+    }
+    showEndTripModal.value = false
+
+    // Remove all green markers from the map
+    markers.value.forEach(marker => marker.remove())
+    markers.value = []
+
+    // Reset map view
+    isFollowing.value = false
+    map.value.flyTo({
+      zoom: 12,
+      duration: 2000
+    })
+
+    lastPosition.value = null
+    sequenceNumber.value = 0
+    currentRideId.value = null
+    isTracking.value = false
+    rideTitle.value = ''
+  } catch (err) {
+    console.error('Error updating ride details:', err)
+    error.value = 'Error updating ride details: ' + (err.message || JSON.stringify(err))
+  }
+}
+
+// Add function to cancel end trip
+const cancelEndTrip = () => {
+  showEndTripModal.value = false
+  // Reset the form
+  endTripDetails.value = {
+    transport_type: '',
+    transaction_type: '',
+    amount: '',
+    notes: ''
+  }
 }
 
 // Toggle trip tracking
@@ -359,15 +561,53 @@ onMounted(async () => {
     mapboxgl.accessToken = token
     map.value = new mapboxgl.Map({
       container: mapContainer.value,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: 'mapbox://styles/mapbox/navigation-night-v1',
       center: [longitude, latitude],
       zoom: 12,
+      pitch: 60,
+      bearing: 0,
       attributionControl: true
     })
 
     map.value.on('load', () => {
       loading.value = false
-      map.value.addControl(new mapboxgl.NavigationControl(), 'top-right')
+      
+      map.value.addControl(new mapboxgl.NavigationControl({
+        showCompass: true,
+        showZoom: true,
+        visualizePitch: true
+      }), 'top-right')
+
+      map.value.addLayer({
+        'id': '3d-buildings',
+        'source': 'composite',
+        'source-layer': 'building',
+        'filter': ['==', 'extrude', 'true'],
+        'type': 'fill-extrusion',
+        'minzoom': 15,
+        'paint': {
+          'fill-extrusion-color': '#aaa',
+          'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            15,
+            0,
+            15.05,
+            ['get', 'height']
+          ],
+          'fill-extrusion-base': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            15,
+            0,
+            15.05,
+            ['get', 'min_height']
+          ],
+          'fill-extrusion-opacity': 0.6
+        }
+      })
 
       new mapboxgl.Marker({
         color: '#FF0000'
