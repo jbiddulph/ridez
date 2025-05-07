@@ -9,7 +9,7 @@
     </div>
     <div class="absolute bottom-4 left-4 right-4 flex justify-center z-10">
       <button
-        @click="showTitleInput = true"
+        @click="isTracking ? stopTrip() : showTitleInput = true"
         :class="[
           'px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all',
           isTracking
