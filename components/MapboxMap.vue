@@ -171,9 +171,6 @@ const startTrip = async () => {
   }
 
   try {
-    // Request background location permission
-    await Geolocation.requestPermissions()
-    
     // Create ride record first
     const rideId = await createRide()
     if (!rideId) {
@@ -184,17 +181,47 @@ const startTrip = async () => {
     isTracking.value = true
     showTitleInput.value = false
 
-    // Start watching position with Capacitor
-    watchId.value = await Geolocation.watchPosition(
-      {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      },
-      (position) => {
-        handlePositionUpdate(position)
+    // Check if we're running in a native environment
+    const isNative = window.Capacitor?.isNative
+    if (isNative) {
+      // Request background location permission for native platforms
+      await Geolocation.requestPermissions()
+      
+      // Start watching position with Capacitor
+      watchId.value = await Geolocation.watchPosition(
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        },
+        (position) => {
+          handlePositionUpdate(position)
+        }
+      )
+    } else {
+      // Use browser's geolocation for web
+      if ('geolocation' in navigator) {
+        watchId.value = navigator.geolocation.watchPosition(
+          (position) => {
+            handlePositionUpdate({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            })
+          },
+          (error) => {
+            console.error('Geolocation error:', error)
+            error.value = 'Error getting location: ' + error.message
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+          }
+        )
+      } else {
+        throw new Error('Geolocation is not supported by your browser')
       }
-    )
+    }
   } catch (err) {
     error.value = 'Error starting trip: ' + err.message
     console.error('Error starting trip:', err)
@@ -204,7 +231,13 @@ const startTrip = async () => {
 // Stop trip
 const stopTrip = async () => {
   if (watchId.value) {
-    await Geolocation.clearWatch({ id: watchId.value })
+    // Check if we're running in a native environment
+    const isNative = window.Capacitor?.isNative
+    if (isNative) {
+      await Geolocation.clearWatch({ id: watchId.value })
+    } else {
+      navigator.geolocation.clearWatch(watchId.value)
+    }
     watchId.value = null
   }
   lastPosition.value = null
