@@ -16,11 +16,7 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
-    preset: 'static',
-    output: {
-      dir: 'dist',
-      publicDir: 'dist'
-    }
+    preset: 'node-server'
   },
   ssr: false,
   app: {

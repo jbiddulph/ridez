@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.ridez.app',
   appName: 'ridez',
-  webDir: 'dist',
+  webDir: '.output/public',
   server: {
     androidScheme: 'https'
   },
