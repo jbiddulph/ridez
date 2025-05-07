@@ -66,6 +66,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Geolocation } from '@capacitor/geolocation'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
+import { useRouter } from 'vue-router'
 
 const mapContainer = ref(null)
 const map = ref(null)
@@ -77,6 +78,7 @@ const lastPosition = ref(null)
 const sequenceNumber = ref(0)
 const client = useSupabaseClient()
 const user = useSupabaseUser()
+const router = useRouter()
 const showTitleInput = ref(false)
 const rideTitle = ref('')
 const currentRideId = ref(null)
@@ -110,56 +112,20 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c // Distance in meters
 }
 
-// Add this function to check auth state
-const checkAuthState = async () => {
-  try {
-    const { data: { session }, error: sessionError } = await client.auth.getSession()
-    console.log('Current session state:', {
-      hasSession: !!session,
-      sessionError: sessionError,
-      user: session?.user,
-      userId: session?.user?.id
-    })
-    return { session, error: sessionError }
-  } catch (err) {
-    console.error('Error checking auth state:', err)
-    return { session: null, error: err }
-  }
-}
-
 // Create a new ride record
 const createRide = async () => {
   try {
-    // Check auth state again
-    const { session, error: sessionError } = await checkAuthState()
-    
-    if (sessionError) {
-      console.error('Session error in createRide:', sessionError)
-      throw new Error('Failed to get session: ' + sessionError.message)
+    if (!user.value) {
+      error.value = 'Please sign in to start tracking'
+      return null
     }
-    
-    if (!session) {
-      console.error('No session found in createRide')
-      throw new Error('No active session found. Please sign in.')
-    }
-
-    if (!session.user) {
-      console.error('No user in session in createRide')
-      throw new Error('No user found in session. Please sign in again.')
-    }
-
-    console.log('Creating ride with session:', {
-      userId: session.user.id,
-      email: session.user.email
-    })
 
     const insertData = {
-      user_id: session.user.id,
+      user_id: user.value.id,
       title: rideTitle.value.trim()
     }
     console.log('Attempting to insert:', insertData)
 
-    // Now try the insert
     const { data, error: insertError } = await client
       .from('ridez_rides')
       .insert(insertData)
@@ -252,33 +218,11 @@ const startTrip = async () => {
       userId: user.value?.id
     })
 
-    // Check auth state
-    const { session, error: sessionError } = await checkAuthState()
-    
-    if (sessionError) {
-      console.error('Session error:', sessionError)
-      error.value = 'Authentication error: ' + sessionError.message
-      return
-    }
-
-    if (!session) {
-      console.error('No session found')
+    if (!user.value) {
       error.value = 'Please sign in to start tracking'
+      router.push('/login')
       return
     }
-
-    if (!session.user) {
-      console.error('No user in session')
-      error.value = 'Please sign in to start tracking'
-      return
-    }
-
-    console.log('Auth state verified:', {
-      session: !!session,
-      user: !!session.user,
-      userId: session.user.id,
-      email: session.user.email
-    })
 
     if (!rideTitle.value.trim()) {
       error.value = 'Please enter a trip title'
@@ -399,9 +343,6 @@ const toggleTrip = () => {
 // Initialize map
 onMounted(async () => {
   try {
-    // Check initial auth state
-    await checkAuthState()
-
     const token = useRuntimeConfig().public.mapboxToken
     if (!token) {
       throw new Error('Mapbox access token is not configured')
