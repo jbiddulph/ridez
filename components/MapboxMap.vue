@@ -4,6 +4,9 @@
     <div v-if="error" class="absolute top-4 left-4 right-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded z-10">
       {{ error }}
     </div>
+    <div v-if="!authReady" class="absolute top-4 left-4 right-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded z-10">
+      Verifying your session...
+    </div>
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
       <div class="text-lg font-medium text-gray-700">Loading map...</div>
     </div>
@@ -16,6 +19,7 @@
             ? 'bg-red-600 hover:bg-red-700'
             : 'bg-green-600 hover:bg-green-700'
         ]"
+        :disabled="!authReady"
       >
         {{ isTracking ? 'STOP TRIP' : 'START TRIP' }}
       </button>
@@ -57,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Geolocation } from '@capacitor/geolocation'
@@ -78,6 +82,17 @@ const rideTitle = ref('')
 const currentRideId = ref(null)
 const markers = ref([])
 const isFollowing = ref(false)
+const authReady = ref(false)
+
+// Watch for user changes
+watch(user, (newUser) => {
+  console.log('User state changed:', {
+    isAuthenticated: !!newUser,
+    userId: newUser?.id,
+    email: newUser?.email
+  })
+  authReady.value = !!newUser
+}, { immediate: true })
 
 // Calculate distance between two points using Haversine formula
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -95,32 +110,47 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c // Distance in meters
 }
 
+// Add this function to check auth state
+const checkAuthState = async () => {
+  try {
+    const { data: { session }, error: sessionError } = await client.auth.getSession()
+    console.log('Current session state:', {
+      hasSession: !!session,
+      sessionError: sessionError,
+      user: session?.user,
+      userId: session?.user?.id
+    })
+    return { session, error: sessionError }
+  } catch (err) {
+    console.error('Error checking auth state:', err)
+    return { session: null, error: err }
+  }
+}
+
 // Create a new ride record
 const createRide = async () => {
   try {
-    // First verify the session
-    const { data: { session }, error: sessionError } = await client.auth.getSession()
+    // Check auth state again
+    const { session, error: sessionError } = await checkAuthState()
+    
     if (sessionError) {
-      console.error('Session error:', sessionError)
+      console.error('Session error in createRide:', sessionError)
       throw new Error('Failed to get session: ' + sessionError.message)
     }
     
     if (!session) {
-      console.error('No session found')
+      console.error('No session found in createRide')
       throw new Error('No active session found. Please sign in.')
     }
 
     if (!session.user) {
-      console.error('No user in session')
+      console.error('No user in session in createRide')
       throw new Error('No user found in session. Please sign in again.')
     }
 
-    // Enhanced debug logging
-    console.log('Session details:', {
-      sessionId: session.access_token,
+    console.log('Creating ride with session:', {
       userId: session.user.id,
-      userEmail: session.user.email,
-      userRole: session.user.role
+      email: session.user.email
     })
 
     const insertData = {
@@ -216,8 +246,14 @@ const handlePositionUpdate = async (position) => {
 // Start trip with title
 const startTrip = async () => {
   try {
-    // Check authentication first
-    const { data: { session }, error: sessionError } = await client.auth.getSession()
+    console.log('Starting trip with auth state:', {
+      authReady: authReady.value,
+      user: user.value,
+      userId: user.value?.id
+    })
+
+    // Check auth state
+    const { session, error: sessionError } = await checkAuthState()
     
     if (sessionError) {
       console.error('Session error:', sessionError)
@@ -231,11 +267,18 @@ const startTrip = async () => {
       return
     }
 
-    if (!user.value) {
-      console.error('No user found')
+    if (!session.user) {
+      console.error('No user in session')
       error.value = 'Please sign in to start tracking'
       return
     }
+
+    console.log('Auth state verified:', {
+      session: !!session,
+      user: !!session.user,
+      userId: session.user.id,
+      email: session.user.email
+    })
 
     if (!rideTitle.value.trim()) {
       error.value = 'Please enter a trip title'
@@ -356,6 +399,9 @@ const toggleTrip = () => {
 // Initialize map
 onMounted(async () => {
   try {
+    // Check initial auth state
+    await checkAuthState()
+
     const token = useRuntimeConfig().public.mapboxToken
     if (!token) {
       throw new Error('Mapbox access token is not configured')
