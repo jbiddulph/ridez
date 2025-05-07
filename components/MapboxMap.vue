@@ -61,6 +61,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Geolocation } from '@capacitor/geolocation'
+import { useSupabaseClient, useSupabaseUser } from '#imports'
 
 const mapContainer = ref(null)
 const map = ref(null)
@@ -75,6 +76,8 @@ const user = useSupabaseUser()
 const showTitleInput = ref(false)
 const rideTitle = ref('')
 const currentRideId = ref(null)
+const markers = ref([])
+const isFollowing = ref(false)
 
 // Calculate distance between two points using Haversine formula
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -95,20 +98,60 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 // Create a new ride record
 const createRide = async () => {
   try {
+    // First verify the session
+    const { data: { session }, error: sessionError } = await client.auth.getSession()
+    if (sessionError) {
+      console.error('Session error:', sessionError)
+      throw new Error('Failed to get session: ' + sessionError.message)
+    }
+    
+    if (!session) {
+      console.error('No session found')
+      throw new Error('No active session found. Please sign in.')
+    }
+
+    if (!session.user) {
+      console.error('No user in session')
+      throw new Error('No user found in session. Please sign in again.')
+    }
+
+    // Enhanced debug logging
+    console.log('Session details:', {
+      sessionId: session.access_token,
+      userId: session.user.id,
+      userEmail: session.user.email,
+      userRole: session.user.role
+    })
+
+    const insertData = {
+      user_id: session.user.id,
+      title: rideTitle.value.trim()
+    }
+    console.log('Attempting to insert:', insertData)
+
+    // Now try the insert
     const { data, error: insertError } = await client
       .from('ridez_rides')
-      .insert({
-        user_id: user.value.id,
-        title: rideTitle.value.trim()
-      })
+      .insert(insertData)
       .select()
       .single()
 
-    if (insertError) throw insertError
+    if (insertError) {
+      console.error('Insert error details:', {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        status: insertError.status
+      })
+      throw insertError
+    }
+
+    console.log('Successfully created ride:', data)
     return data.id
   } catch (err) {
     console.error('Error creating ride:', err)
-    error.value = 'Error creating ride: ' + err.message
+    error.value = 'Error creating ride: ' + (err.message || JSON.stringify(err))
     return null
   }
 }
@@ -144,13 +187,25 @@ const handlePositionUpdate = async (position) => {
       // Update last position
       lastPosition.value = { latitude, longitude }
 
-      // Add point to map
-      new mapboxgl.Marker({
+      // Add point to map and store the marker
+      const marker = new mapboxgl.Marker({
         color: '#00FF00',
         scale: 0.5
       })
         .setLngLat([longitude, latitude])
         .addTo(map.value)
+      
+      markers.value.push(marker)
+
+      // Update map view if following
+      if (isFollowing.value) {
+        map.value.flyTo({
+          center: [longitude, latitude],
+          zoom: 18,
+          essential: true,
+          duration: 1000
+        })
+      }
     } catch (err) {
       console.error('Error recording position:', err)
       error.value = 'Error recording position: ' + err.message
@@ -160,17 +215,33 @@ const handlePositionUpdate = async (position) => {
 
 // Start trip with title
 const startTrip = async () => {
-  if (!user.value) {
-    error.value = 'Please sign in to start tracking'
-    return
-  }
-
-  if (!rideTitle.value.trim()) {
-    error.value = 'Please enter a trip title'
-    return
-  }
-
   try {
+    // Check authentication first
+    const { data: { session }, error: sessionError } = await client.auth.getSession()
+    
+    if (sessionError) {
+      console.error('Session error:', sessionError)
+      error.value = 'Authentication error: ' + sessionError.message
+      return
+    }
+
+    if (!session) {
+      console.error('No session found')
+      error.value = 'Please sign in to start tracking'
+      return
+    }
+
+    if (!user.value) {
+      console.error('No user found')
+      error.value = 'Please sign in to start tracking'
+      return
+    }
+
+    if (!rideTitle.value.trim()) {
+      error.value = 'Please enter a trip title'
+      return
+    }
+
     // Create ride record first
     const rideId = await createRide()
     if (!rideId) {
@@ -179,7 +250,21 @@ const startTrip = async () => {
 
     currentRideId.value = rideId
     isTracking.value = true
+    isFollowing.value = true
     showTitleInput.value = false
+
+    // Zoom in and center on current location
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 5000
+    })
+
+    map.value.flyTo({
+      center: [position.coords.longitude, position.coords.latitude],
+      zoom: 18,
+      essential: true,
+      duration: 2000
+    })
 
     // Check if we're running in a native environment
     const isNative = window.Capacitor?.isNative
@@ -240,6 +325,18 @@ const stopTrip = async () => {
     }
     watchId.value = null
   }
+
+  // Remove all green markers from the map
+  markers.value.forEach(marker => marker.remove())
+  markers.value = []
+
+  // Reset map view
+  isFollowing.value = false
+  map.value.flyTo({
+    zoom: 12,
+    duration: 2000
+  })
+
   lastPosition.value = null
   sequenceNumber.value = 0
   currentRideId.value = null
