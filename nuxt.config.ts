@@ -14,5 +14,8 @@ export default defineNuxtConfig({
     public: {
       mapboxToken: process.env.MAPBOX_ACCESS_TOKEN
     }
+  },
+  nitro: {
+    preset: 'node-server'
   }
 })
