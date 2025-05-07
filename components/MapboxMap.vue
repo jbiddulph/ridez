@@ -60,6 +60,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { Geolocation } from '@capacitor/geolocation'
 
 const mapContainer = ref(null)
 const map = ref(null)
@@ -116,7 +117,7 @@ const createRide = async () => {
 const handlePositionUpdate = async (position) => {
   if (!isTracking.value || !currentRideId.value) return
 
-  const { latitude, longitude } = position.coords
+  const { latitude, longitude } = position
   const distance = lastPosition.value
     ? calculateDistance(
         lastPosition.value.latitude,
@@ -169,35 +170,41 @@ const startTrip = async () => {
     return
   }
 
-  // Create ride record first
-  const rideId = await createRide()
-  if (!rideId) {
-    return
-  }
-
-  currentRideId.value = rideId
-  isTracking.value = true
-  showTitleInput.value = false
-
-  // Start tracking
-  watchId.value = navigator.geolocation.watchPosition(
-    handlePositionUpdate,
-    (err) => {
-      error.value = 'Error getting location: ' + err.message
-      console.error('Geolocation error:', err)
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 0
+  try {
+    // Request background location permission
+    await Geolocation.requestPermissions()
+    
+    // Create ride record first
+    const rideId = await createRide()
+    if (!rideId) {
+      return
     }
-  )
+
+    currentRideId.value = rideId
+    isTracking.value = true
+    showTitleInput.value = false
+
+    // Start watching position with Capacitor
+    watchId.value = await Geolocation.watchPosition(
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      },
+      (position) => {
+        handlePositionUpdate(position)
+      }
+    )
+  } catch (err) {
+    error.value = 'Error starting trip: ' + err.message
+    console.error('Error starting trip:', err)
+  }
 }
 
 // Stop trip
-const stopTrip = () => {
+const stopTrip = async () => {
   if (watchId.value) {
-    navigator.geolocation.clearWatch(watchId.value)
+    await Geolocation.clearWatch({ id: watchId.value })
     watchId.value = null
   }
   lastPosition.value = null
@@ -224,12 +231,10 @@ onMounted(async () => {
       throw new Error('Mapbox access token is not configured')
     }
 
-    const position = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(resolve, reject, {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-      })
+    // Get current position using Capacitor
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 5000
     })
 
     const { longitude, latitude } = position.coords
@@ -273,9 +278,9 @@ onMounted(async () => {
 })
 
 // Clean up
-onUnmounted(() => {
+onUnmounted(async () => {
   if (watchId.value) {
-    navigator.geolocation.clearWatch(watchId.value)
+    await Geolocation.clearWatch({ id: watchId.value })
   }
   if (map.value) {
     map.value.remove()
