@@ -16,7 +16,14 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
-    preset: 'static'
+    preset: 'static',
+    output: {
+      dir: 'dist',
+      publicDir: 'dist'
+    }
   },
-  ssr: false
+  ssr: false,
+  app: {
+    buildAssetsDir: '/_nuxt/'
+  }
 })
