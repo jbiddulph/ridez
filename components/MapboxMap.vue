@@ -527,8 +527,8 @@ const submitEndTripDetails = async () => {
     }
 
     // Validate transaction type
-    if (!formattedData.transaction_type || !['spending', 'earning'].includes(formattedData.transaction_type)) {
-      throw new Error('Please select a valid transaction type (spending or earning)')
+    if (!formattedData.transaction_type || !['spending', 'earning', 'na'].includes(formattedData.transaction_type)) {
+      throw new Error('Please select a valid transaction type (spending, earning, or N/A)')
     }
 
     // Log the update attempt
