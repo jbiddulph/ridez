@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full h-[500px] rounded-lg overflow-hidden shadow-lg">
+  <div class="relative w-full h-full">
     <div ref="mapContainer" class="absolute inset-0 w-full h-full"></div>
     <div v-if="error" class="absolute top-4 left-4 right-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded z-10">
       {{ error }}
@@ -10,11 +10,11 @@
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
       <div class="text-lg font-medium text-gray-700">Loading map...</div>
     </div>
-    <div class="absolute bottom-4 left-4 right-4 flex justify-center z-10">
+    <div class="absolute bottom-[200px] left-4 right-4 flex justify-center z-[100]">
       <button
         @click="isTracking ? stopTrip() : showTitleInput = true"
         :class="[
-          'px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all z-[62px]',
+          'px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all',
           isTracking
             ? 'bg-red-600 hover:bg-red-700'
             : 'bg-green-600 hover:bg-green-700'
@@ -59,37 +59,114 @@
     </div>
 
     <!-- End Trip Modal -->
-    <div v-if="showEndTripModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div v-if="showEndTripModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200]">
       <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <h3 class="text-xl font-bold mb-4">End Trip Details</h3>
-        <form @submit.prevent="submitEndTripDetails" class="space-y-4">
+        <form @submit.prevent="submitEndTripDetails" class="space-y-6">
           <div>
-            <label for="transportType" class="block text-sm font-medium text-gray-700 mb-2">Transport Type</label>
-            <select
-              id="transportType"
-              v-model="endTripDetails.transport_type"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select transport type</option>
-              <option value="walk">Walk</option>
-              <option value="cycle">Cycle</option>
-              <option value="drive">Drive</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-700 mb-3">Transport Type</label>
+            <div class="grid grid-cols-3 gap-3">
+              <label class="relative flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                :class="{'bg-blue-50 border-blue-500': endTripDetails.transport_type === 'walk'}">
+                <input
+                  type="radio"
+                  v-model="endTripDetails.transport_type"
+                  value="walk"
+                  class="absolute opacity-0 w-0 h-0"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2" 
+                  :class="endTripDetails.transport_type === 'walk' ? 'text-blue-600' : 'text-gray-600'"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span class="text-sm font-medium" :class="{'text-blue-600': endTripDetails.transport_type === 'walk'}">Walk</span>
+              </label>
+
+              <label class="relative flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                :class="{'bg-blue-50 border-blue-500': endTripDetails.transport_type === 'cycle'}">
+                <input
+                  type="radio"
+                  v-model="endTripDetails.transport_type"
+                  value="cycle"
+                  class="absolute opacity-0 w-0 h-0"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2"
+                  :class="endTripDetails.transport_type === 'cycle' ? 'text-blue-600' : 'text-gray-600'"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span class="text-sm font-medium" :class="{'text-blue-600': endTripDetails.transport_type === 'cycle'}">Cycle</span>
+              </label>
+
+              <label class="relative flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                :class="{'bg-blue-50 border-blue-500': endTripDetails.transport_type === 'drive'}">
+                <input
+                  type="radio"
+                  v-model="endTripDetails.transport_type"
+                  value="drive"
+                  class="absolute opacity-0 w-0 h-0"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2"
+                  :class="endTripDetails.transport_type === 'drive' ? 'text-blue-600' : 'text-gray-600'"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                <span class="text-sm font-medium" :class="{'text-blue-600': endTripDetails.transport_type === 'drive'}">Drive</span>
+              </label>
+            </div>
           </div>
 
           <div>
-            <label for="transactionType" class="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
-            <select
-              id="transactionType"
-              v-model="endTripDetails.transaction_type"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select transaction type</option>
-              <option value="spending">Spending</option>
-              <option value="earning">Earning</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-700 mb-3">Transaction Type</label>
+            <div class="grid grid-cols-3 gap-3">
+              <label class="relative flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                :class="{'bg-blue-50 border-blue-500': endTripDetails.transaction_type === 'spending'}">
+                <input
+                  type="radio"
+                  v-model="endTripDetails.transaction_type"
+                  value="spending"
+                  class="absolute opacity-0 w-0 h-0"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2"
+                  :class="endTripDetails.transaction_type === 'spending' ? 'text-blue-600' : 'text-gray-600'"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-sm font-medium" :class="{'text-blue-600': endTripDetails.transaction_type === 'spending'}">Spending</span>
+              </label>
+
+              <label class="relative flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                :class="{'bg-blue-50 border-blue-500': endTripDetails.transaction_type === 'earning'}">
+                <input
+                  type="radio"
+                  v-model="endTripDetails.transaction_type"
+                  value="earning"
+                  class="absolute opacity-0 w-0 h-0"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2"
+                  :class="endTripDetails.transaction_type === 'earning' ? 'text-blue-600' : 'text-gray-600'"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="text-sm font-medium" :class="{'text-blue-600': endTripDetails.transaction_type === 'earning'}">Earning</span>
+              </label>
+
+              <label class="relative flex flex-col items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                :class="{'bg-blue-50 border-blue-500': endTripDetails.transaction_type === 'na'}">
+                <input
+                  type="radio"
+                  v-model="endTripDetails.transaction_type"
+                  value="na"
+                  class="absolute opacity-0 w-0 h-0"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mb-2"
+                  :class="endTripDetails.transaction_type === 'na' ? 'text-blue-600' : 'text-gray-600'"
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                <span class="text-sm font-medium" :class="{'text-blue-600': endTripDetails.transaction_type === 'na'}">N/A</span>
+              </label>
+            </div>
           </div>
 
           <div>
@@ -99,7 +176,6 @@
               v-model="endTripDetails.amount"
               type="number"
               step="0.01"
-              required
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter amount"
             />
@@ -144,6 +220,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { Geolocation } from '@capacitor/geolocation'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
 import { useRouter } from 'vue-router'
+import { useTripTracking } from '~/composables/useTripTracking'
 
 const mapContainer = ref(null)
 const map = ref(null)
@@ -169,6 +246,7 @@ const endTripDetails = ref({
   amount: '',
   notes: ''
 })
+const { setTracking } = useTripTracking()
 
 // Watch for user changes
 watch(user, (newUser) => {
@@ -250,9 +328,10 @@ const handlePositionUpdate = async (position) => {
       )
     : 0
 
-  // Only record if moved more than 5 meters or it's the first point
-  if (distance >= 5 || !lastPosition.value) {
+  // Only record if moved more than 10 meters or it's the first point
+  if (distance >= 10 || !lastPosition.value) {
     try {
+      console.log('Recording position:', { latitude, longitude, distance })
       const { error: insertError } = await client.from('ridez_routes').insert({
         user_id: user.value.id,
         ride_id: currentRideId.value,
@@ -262,7 +341,10 @@ const handlePositionUpdate = async (position) => {
         sequence_number: sequenceNumber.value++
       })
 
-      if (insertError) throw insertError
+      if (insertError) {
+        console.error('Error inserting route point:', insertError)
+        throw insertError
+      }
 
       // Update last position
       lastPosition.value = { latitude, longitude }
@@ -323,8 +405,10 @@ const startTrip = async () => {
 
     currentRideId.value = rideId
     isTracking.value = true
+    setTracking(true)
     isFollowing.value = true
     showTitleInput.value = false
+    rideTitle.value = '' // Clear the title input
 
     // Get current position and heading
     const position = await Geolocation.getCurrentPosition({
@@ -411,8 +495,7 @@ const stopTrip = async () => {
     }
     watchId.value = null
   }
-
-  // Show the end trip modal instead of immediately stopping
+  setTracking(false)
   showEndTripModal.value = true
 }
 
