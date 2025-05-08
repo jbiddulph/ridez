@@ -22,9 +22,9 @@
         </div>
 
         <!-- Content -->
-        <div class="p-6">
+        <div>
           <!-- Trip Info -->
-          <div class="mb-6">
+          <div class="mx-6 my-2">
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <h4 class="text-lg font-medium text-gray-900">{{ trip?.title }}</h4>
@@ -45,12 +45,12 @@
               </div>
             </div>
           </div>
-
+        </div>
           <!-- Map -->
-          <div class="mb-6 h-96 rounded-lg overflow-hidden border border-gray-200 relative">
+          <div class="h-80 overflow-hidden border border-gray-200 relative">
             <div ref="mapContainer" class="w-full h-full z-[60] bg-gray-100"></div>
           </div>
-
+        <div class="p-6">
           <!-- Trip Details -->
           <div class="grid grid-cols-2 gap-6">
             <div>
@@ -144,16 +144,89 @@ const initMap = async () => {
 
     mapboxgl.accessToken = config.public.mapboxToken
 
-    // Create a basic map centered on London
+    // Get route points from the trip
+    const { data: routePoints, error } = await useSupabaseClient()
+      .from('ridez_routes')
+      .select('latitude, longitude, sequence_number')
+      .eq('ride_id', props.trip.id)
+      .order('sequence_number', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching route points:', error)
+      return
+    }
+
+    if (!routePoints || routePoints.length === 0) {
+      console.error('No route points found')
+      return
+    }
+
+    // Calculate the middle point index
+    const middleIndex = Math.floor(routePoints.length / 2)
+    const middlePoint = routePoints[middleIndex]
+
+    // Create a basic map centered on the middle point
     map = new mapboxgl.Map({
       container: mapContainer.value,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [-0.127758, 51.507351], // London coordinates
-      zoom: 10
+      center: [middlePoint.longitude, middlePoint.latitude],
+      zoom: 13
     })
 
     map.on('load', () => {
       console.log('Map loaded successfully')
+
+      // Add the route line
+      map.addSource('route', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates: routePoints.map(point => [point.longitude, point.latitude])
+          }
+        }
+      })
+
+      // Add the route line layer
+      map.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 4
+        }
+      })
+
+      // Add markers for start and end points
+      const startPoint = routePoints[0]
+      const endPoint = routePoints[routePoints.length - 1]
+
+      // Add start marker
+      new mapboxgl.Marker({ color: '#22c55e' })
+        .setLngLat([startPoint.longitude, startPoint.latitude])
+        .addTo(map)
+
+      // Add end marker
+      new mapboxgl.Marker({ color: '#ef4444' })
+        .setLngLat([endPoint.longitude, endPoint.latitude])
+        .addTo(map)
+
+      // Fit bounds to show the entire route
+      const bounds = routePoints.reduce((bounds, point) => {
+        return bounds.extend([point.longitude, point.latitude])
+      }, new mapboxgl.LngLatBounds())
+
+      map.fitBounds(bounds, {
+        padding: 50,
+        duration: 1000
+      })
     })
 
     map.on('error', (e) => {

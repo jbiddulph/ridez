@@ -4,14 +4,15 @@
     <div v-if="error" class="absolute top-4 left-4 right-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded z-10">
       {{ error }}
     </div>
-    <div v-if="!authReady" class="absolute top-4 left-4 right-4 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded z-10">
-      Verifying your session...
+    <div v-if="!authReady" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+      <div class="text-lg font-medium text-gray-700">Redirecting to settings...</div>
     </div>
     <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
       <div class="text-lg font-medium text-gray-700">Loading map...</div>
     </div>
     <div class="absolute bottom-[200px] left-4 right-4 flex justify-center z-[100]">
       <button
+        v-if="!showTitleInput"
         @click="isTracking ? stopTrip() : showTitleInput = true"
         :class="[
           'px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all',
@@ -52,14 +53,14 @@
             :disabled="!rideTitle.trim()"
             class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed z-[62px]"
           >
-            Start Trip
+            GO
           </button>
         </div>
       </div>
     </div>
 
     <!-- End Trip Modal -->
-    <div v-if="showEndTripModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200]">
+    <div v-if="showEndTripModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200]" style="margin-top: -100px;">
       <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <h3 class="text-xl font-bold mb-4">End Trip Details</h3>
         <form @submit.prevent="submitEndTripDetails" class="space-y-6">
@@ -256,6 +257,9 @@ watch(user, (newUser) => {
     email: newUser?.email
   })
   authReady.value = !!newUser
+  if (!newUser) {
+    router.push('/settings')
+  }
 }, { immediate: true })
 
 // Calculate distance between two points using Haversine formula
@@ -329,7 +333,7 @@ const handlePositionUpdate = async (position) => {
     : 0
 
   // Only record if moved more than 10 meters or it's the first point
-  if (distance >= 10 || !lastPosition.value) {
+  if (distance >= 15 || !lastPosition.value) {
     try {
       console.log('Recording position:', { latitude, longitude, distance })
       const { error: insertError } = await client.from('ridez_routes').insert({
@@ -659,7 +663,7 @@ onMounted(async () => {
         showCompass: true,
         showZoom: true,
         visualizePitch: true
-      }), 'top-right')
+      }), 'bottom-right')
 
       map.value.addLayer({
         'id': '3d-buildings',
