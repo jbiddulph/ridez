@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'ridez',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    hostname: 'localhost',
+    cleartext: true
   },
   plugins: {
     Geolocation: {

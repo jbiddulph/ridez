@@ -14,7 +14,7 @@
       <button
         @click="isTracking ? stopTrip() : showTitleInput = true"
         :class="[
-          'px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all',
+          'px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all z-[62px]',
           isTracking
             ? 'bg-red-600 hover:bg-red-700'
             : 'bg-green-600 hover:bg-green-700'
@@ -50,7 +50,7 @@
           <button
             @click="startTrip"
             :disabled="!rideTitle.trim()"
-            class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed z-[62px]"
           >
             Start Trip
           </button>
