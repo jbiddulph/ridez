@@ -322,7 +322,16 @@ const createRide = async () => {
 const handlePositionUpdate = async (position) => {
   if (!isTracking.value || !currentRideId.value) return
 
-  const { latitude, longitude } = position
+  // Extract coordinates from Capacitor position object
+  const latitude = position.coords?.latitude
+  const longitude = position.coords?.longitude
+
+  // Validate coordinates
+  if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+    console.error('Invalid coordinates:', position)
+    return
+  }
+
   const distance = lastPosition.value
     ? calculateDistance(
         lastPosition.value.latitude,

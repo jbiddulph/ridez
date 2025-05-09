@@ -1,9 +1,9 @@
 PODS:
-  - Capacitor (7.2.0):
+  - Capacitor (5.5.0):
     - CapacitorCordova
   - CapacitorCommunityBackgroundGeolocation (0.0.1):
     - Capacitor
-  - CapacitorCordova (7.2.0)
+  - CapacitorCordova (5.5.0)
   - CapacitorGeolocation (7.1.2):
     - Capacitor
     - IONGeolocationLib (~> 1.0)
@@ -35,9 +35,9 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/screen-orientation"
 
 SPEC CHECKSUMS:
-  Capacitor: 03bc7cbdde6a629a8b910a9d7d78c3cc7ed09ea7
+  Capacitor: 018b78e70c892da9e2ca16481978c3ce09fa491a
   CapacitorCommunityBackgroundGeolocation: 834a8f8eca8ebada8debffe1236e5674b831cead
-  CapacitorCordova: 5967b9ba03915ef1d585469d6e31f31dc49be96f
+  CapacitorCordova: 3d3908a3d208a11a75f9df3b18c4405c4de76e1d
   CapacitorGeolocation: b005744861676af9abd19a0682f0b1af32cc2c99
   CapacitorScreenOrientation: 6d989dff97440c7bfa78deee13952d7fb03c27f3
   IONGeolocationLib: 81f33f88d025846946de2cf63b0c7628e7c6bc9d
