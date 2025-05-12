@@ -66,8 +66,15 @@
 
 <script setup>
 import { useTripTracking } from '~/composables/useTripTracking'
+import { useDarkMode } from '~/composables/useDarkMode'
+import { onMounted } from 'vue'
 
 const { isTracking } = useTripTracking()
+const { fetchDarkMode } = useDarkMode()
+
+onMounted(() => {
+  fetchDarkMode()
+})
 </script>
 
 <style>

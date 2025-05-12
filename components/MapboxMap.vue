@@ -539,7 +539,7 @@ const handlePositionUpdate = async (position) => {
 
     // Add car icon marker (rotated to match bearing)
     const el = document.createElement('div');
-    el.style.backgroundImage = "url('../assets/images/car-top-view-icon-11560.png')";
+    el.style.backgroundImage = "url('/assets/images/car-top-view-icon-11560.png')";
     el.style.width = '40px';
     el.style.height = '40px';
     el.style.backgroundSize = 'contain';
@@ -549,6 +549,8 @@ const handlePositionUpdate = async (position) => {
     el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
     el.style.transform = `rotate(${bearing}deg)`;
     el.style.transition = 'transform 0.3s';
+    el.style.zIndex = '50';
+    el.style.pointerEvents = 'none';
     currentLocationMarker.value = new mapboxgl.Marker({
       element: el
     })

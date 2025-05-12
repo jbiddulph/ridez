@@ -220,6 +220,7 @@ import { useSupabaseClient, useSupabaseUser } from '#imports'
 import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
 import { KeepAwake } from '@capacitor-community/keep-awake'
+import { useDarkMode } from '~/composables/useDarkMode'
 
 const client = useSupabaseClient()
 const user = useSupabaseUser()
@@ -230,10 +231,10 @@ const fullName = ref('')
 const loading = ref(false)
 const error = ref('')
 const isLogin = ref(true)
-const isDarkMode = ref(false)
 const markerColor = ref('#00FF00')
 const markerScale = ref(0.5)
 const wakeLock = ref(null)
+const { isDarkMode, fetchDarkMode, setDarkMode } = useDarkMode()
 
 const loadSettings = async () => {
   if (!user.value) {
@@ -245,7 +246,7 @@ const loadSettings = async () => {
     console.log('[DEBUG] Loading settings for user:', user.value.id)
     const { data, error } = await client
       .from('ridez_settings')
-      .select('marker_color, marker_scale, dark_mode')
+      .select('marker_color, marker_scale')
       .eq('user_id', user.value.id)
       .single()
 
@@ -257,7 +258,6 @@ const loadSettings = async () => {
       console.log('[DEBUG] Loaded marker settings:', data)
       markerColor.value = data.marker_color || '#00FF00'
       markerScale.value = data.marker_scale || 0.5
-      isDarkMode.value = data.dark_mode || false
     } else {
       console.log('[DEBUG] No data found for user, using defaults')
     }
@@ -267,12 +267,16 @@ const loadSettings = async () => {
 }
 
 // Call on mount
-onMounted(loadSettings)
+onMounted(() => {
+  loadSettings()
+  fetchDarkMode()
+})
 
 // Watch for user changes
 watch(user, (newUser) => {
   if (newUser) {
     loadSettings()
+    fetchDarkMode()
   }
 })
 
@@ -286,8 +290,7 @@ const saveSettings = async () => {
       .upsert({
         user_id: user.value.id,
         marker_color: markerColor.value,
-        marker_scale: markerScale.value,
-        dark_mode: isDarkMode.value
+        marker_scale: markerScale.value
       }, { onConflict: 'user_id' })
 
     if (error) throw error
@@ -368,8 +371,8 @@ const handleSignOut = async () => {
 }
 
 const toggleDarkMode = async () => {
-  isDarkMode.value = !isDarkMode.value
-  await saveSettings()
+  await setDarkMode(!isDarkMode.value)
+  await fetchDarkMode()
 }
 
 const requestWakeLock = async () => {
