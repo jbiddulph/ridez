@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@capacitor-community/background-geolocation": "^1.2.22",
+    "@capacitor-community/keep-awake": "^7.0.0",
     "@capacitor/android": "^7.2.0",
     "@capacitor/cli": "^7.2.0",
     "@capacitor/core": "^7.2.0",
@@ -21,7 +22,7 @@
     "@capacitor/screen-orientation": "^7.0.1",
     "@nuxtjs/supabase": "^1.1.4",
     "@nuxtjs/tailwindcss": "^6.11.4",
-    "mapbox-gl": "^3.11.1",
+    "mapbox-gl": "^3.12.0",
     "nuxt": "^3.10.3",
     "pinia": "^3.0.2",
     "vue": "^3.4.19",

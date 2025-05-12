@@ -241,6 +241,10 @@ const markers = ref([])
 const isFollowing = ref(false)
 const authReady = ref(false)
 const showEndTripModal = ref(false)
+const markerPreferences = ref({
+  marker_color: '#00FF00',
+  marker_scale: 0.5
+})
 const endTripDetails = ref({
   transport_type: '',
   transaction_type: '',
@@ -249,7 +253,141 @@ const endTripDetails = ref({
 })
 const { setTracking } = useTripTracking()
 
-// Watch for user changes
+// Function to fetch user marker preferences
+const fetchMarkerPreferences = async () => {
+  if (!user.value) return
+
+  try {
+    console.log('Fetching marker settings for user:', user.value.id)
+    const { data, error: fetchError } = await client
+      .from('ridez_settings')
+      .select('marker_color, marker_scale')
+      .eq('user_id', user.value.id)
+      .single()
+
+    if (fetchError) {
+      // If no settings exist, create default settings for the user
+      if (fetchError.code === 'PGRST116') {
+        console.log('No settings found, creating default settings')
+        const { data: newSettings, error: insertError } = await client
+          .from('ridez_settings')
+          .insert({
+            user_id: user.value.id,
+            marker_color: '#00FF00',
+            marker_scale: 0.5
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error('Error creating default settings:', insertError)
+          return
+        }
+
+        markerPreferences.value = {
+          marker_color: newSettings.marker_color,
+          marker_scale: newSettings.marker_scale
+        }
+      } else {
+        console.error('Error fetching marker settings:', fetchError)
+        return
+      }
+    } else if (data) {
+      console.log('Found marker settings:', data)
+      markerPreferences.value = {
+        marker_color: data.marker_color,
+        marker_scale: data.marker_scale
+      }
+
+      // Update any existing markers with new preferences
+      markers.value.forEach(marker => {
+        marker.setColor(markerPreferences.value.marker_color)
+        marker.setScale(markerPreferences.value.marker_scale)
+      })
+    }
+  } catch (err) {
+    console.error('Error in fetchMarkerPreferences:', err)
+  }
+}
+
+// Function to update marker preferences
+const updateMarkerPreferences = async (newColor, newScale) => {
+  if (!user.value) return
+
+  try {
+    console.log('Updating marker preferences for user:', user.value.id, {
+      newColor,
+      newScale
+    })
+
+    // First check if settings exist
+    const { data: existingSettings, error: checkError } = await client
+      .from('ridez_settings')
+      .select('id')
+      .eq('user_id', user.value.id)
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing settings:', checkError)
+      return
+    }
+
+    let result
+    if (existingSettings) {
+      // Update existing row
+      console.log('Updating existing settings row:', existingSettings.id)
+      const { data, error: updateError } = await client
+        .from('ridez_settings')
+        .update({
+          marker_color: newColor,
+          marker_scale: newScale
+        })
+        .eq('user_id', user.value.id)
+        .select()
+        .single()
+
+      if (updateError) {
+        console.error('Error updating marker settings:', updateError)
+        return
+      }
+      result = data
+    } else {
+      // Create new row if none exists
+      console.log('Creating new settings row for user')
+      const { data, error: insertError } = await client
+        .from('ridez_settings')
+        .insert({
+          user_id: user.value.id,
+          marker_color: newColor,
+          marker_scale: newScale
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('Error creating marker settings:', insertError)
+        return
+      }
+      result = data
+    }
+
+    console.log('Successfully updated marker preferences:', result)
+    markerPreferences.value = {
+      marker_color: result.marker_color,
+      marker_scale: result.marker_scale
+    }
+
+    // Update existing markers
+    markers.value.forEach(marker => {
+      marker.setColor(markerPreferences.value.marker_color)
+      marker.setScale(markerPreferences.value.marker_scale)
+    })
+  } catch (err) {
+    console.error('Error in updateMarkerPreferences:', err)
+  }
+}
+
+// Watch for user changes and fetch preferences
 watch(user, (newUser) => {
   console.log('User state changed:', {
     isAuthenticated: !!newUser,
@@ -257,7 +395,10 @@ watch(user, (newUser) => {
     email: newUser?.email
   })
   authReady.value = !!newUser
-  if (!newUser) {
+  if (newUser) {
+    fetchMarkerPreferences()
+    console.log('Marker preferences:', markerPreferences.value)
+  } else {
     router.push('/settings')
   }
 }, { immediate: true })
@@ -341,18 +482,34 @@ const handlePositionUpdate = async (position) => {
       )
     : 0
 
-  // Only record if moved more than 10 meters or it's the first point
-  if (distance >= 15 || !lastPosition.value) {
+  // Update map view immediately with new position
+  if (isFollowing.value) {
+    map.value.flyTo({
+      center: [longitude, latitude],
+      zoom: 19,
+      pitch: 60,
+      essential: true,
+      duration: 500
+    })
+  }
+
+  // Only record if moved more than 20 meters or it's the first point
+  if (distance >= 20 || !lastPosition.value) {
     try {
-      console.log('Recording position:', { latitude, longitude, distance })
-      const { error: insertError } = await client.from('ridez_routes').insert({
+      console.log('Recording position:', { 
+        latitude, 
+        longitude, 
+        distance
+      })
+      
+      const { data: insertedPoint, error: insertError } = await client.from('ridez_routes').insert({
         user_id: user.value.id,
         ride_id: currentRideId.value,
         latitude,
         longitude,
         distance_from_last_point: distance,
         sequence_number: sequenceNumber.value++
-      })
+      }).select().single()
 
       if (insertError) {
         console.error('Error inserting route point:', insertError)
@@ -364,33 +521,35 @@ const handlePositionUpdate = async (position) => {
 
       // Add point to map and store the marker
       const marker = new mapboxgl.Marker({
-        color: '#00FF00',
-        scale: 0.5
+        color: markerPreferences.value.marker_color,
+        scale: markerPreferences.value.marker_scale
       })
         .setLngLat([longitude, latitude])
         .addTo(map.value)
       
       markers.value.push(marker)
-
-      // Update map view if following
-      if (isFollowing.value) {
-        map.value.flyTo({
-          center: [longitude, latitude],
-          zoom: 18,
-          pitch: 60,
-          bearing: map.value.getBearing(),
-          essential: true,
-          duration: 1000
-        })
-      }
     } catch (err) {
       console.error('Error recording position:', err)
       error.value = 'Error recording position: ' + err.message
     }
+  } else {
+    // Update last position even if we don't record the point
+    lastPosition.value = { latitude, longitude }
+    
+    // Still update map position for smooth following
+    if (isFollowing.value) {
+      map.value.flyTo({
+        center: [longitude, latitude],
+        zoom: 19,
+        pitch: 60,
+        essential: true,
+        duration: 500
+      })
+    }
   }
 }
 
-// Start trip with title
+// Start trip
 const startTrip = async () => {
   try {
     console.log('Starting trip with auth state:', {
@@ -423,33 +582,13 @@ const startTrip = async () => {
     showTitleInput.value = false
     rideTitle.value = '' // Clear the title input
 
-    // Get current position and heading
+    // Get current position
     const position = await Geolocation.getCurrentPosition({
       enableHighAccuracy: true,
       timeout: 5000
     })
 
-    // Get device orientation if available
-    let bearing = 0
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', (event) => {
-        if (event.alpha !== null) {
-          bearing = event.alpha
-        }
-      })
-    }
-
-    // Update map view with 3D perspective
-    map.value.flyTo({
-      center: [position.coords.longitude, position.coords.latitude],
-      zoom: 18,
-      pitch: 60,
-      bearing: bearing,
-      essential: true,
-      duration: 2000
-    })
-
-    // Check if we're running in a native environment
+    // Start location tracking
     const isNative = window.Capacitor?.isNative
     if (isNative) {
       // Request background location permission for native platforms
@@ -460,10 +599,15 @@ const startTrip = async () => {
         {
           enableHighAccuracy: true,
           timeout: 5000,
-          maximumAge: 0
+          maximumAge: 0,
+          distanceFilter: 2 // Reduced minimum distance between updates
         },
         (position) => {
           handlePositionUpdate(position)
+        },
+        (error) => {
+          console.error('Geolocation error:', error)
+          error.value = 'Error getting location: ' + error.message
         }
       )
     } else {
@@ -472,8 +616,11 @@ const startTrip = async () => {
         watchId.value = navigator.geolocation.watchPosition(
           (position) => {
             handlePositionUpdate({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude
+              coords: {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                accuracy: position.coords.accuracy
+              }
             })
           },
           (error) => {
@@ -490,9 +637,49 @@ const startTrip = async () => {
         throw new Error('Geolocation is not supported by your browser')
       }
     }
+
+    // Add initial marker
+    const marker = new mapboxgl.Marker({
+      color: markerPreferences.value.marker_color,
+      scale: markerPreferences.value.marker_scale
+    })
+      .setLngLat([position.coords.longitude, position.coords.latitude])
+      .addTo(map.value)
+    
+    markers.value.push(marker)
+
+    // Insert initial position
+    const { data: initialPoint, error: insertError } = await client.from('ridez_routes').insert({
+      user_id: user.value.id,
+      ride_id: currentRideId.value,
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      distance_from_last_point: 0,
+      sequence_number: sequenceNumber.value++
+    }).select().single()
+
+    if (insertError) {
+      throw insertError
+    }
+
+    // Update last position
+    lastPosition.value = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
+    }
+
+    // Set initial map view
+    map.value.flyTo({
+      center: [position.coords.longitude, position.coords.latitude],
+      zoom: 19,
+      pitch: 60,
+      essential: true,
+      duration: 2000
+    })
+
   } catch (err) {
-    error.value = 'Error starting trip: ' + err.message
     console.error('Error starting trip:', err)
+    error.value = 'Failed to start trip: ' + err.message
   }
 }
 
