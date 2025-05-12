@@ -426,6 +426,16 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c // Distance in meters
 }
 
+// Calculate bearing between two points
+const calculateBearing = (lat1, lon1, lat2, lon2) => {
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180
+  const y = Math.sin(Δλ) * Math.cos(lat2 * Math.PI / 180)
+  const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) -
+    Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(Δλ)
+  const bearing = Math.atan2(y, x)
+  return (bearing * 180 / Math.PI + 360) % 360
+}
+
 // Create a new ride record
 const createRide = async () => {
   try {
@@ -466,7 +476,31 @@ const createRide = async () => {
   }
 }
 
-// Handle position updates
+// Helper to record marker and DB entry
+async function recordMarkerAndRoute(latitude, longitude, distance) {
+  try {
+    const { data: insertedPoint, error: insertError } = await client.from('ridez_routes').insert({
+      user_id: user.value.id,
+      ride_id: currentRideId.value,
+      latitude,
+      longitude,
+      distance_from_last_point: distance,
+      sequence_number: sequenceNumber.value++
+    }).select().single()
+    if (insertError) throw insertError
+    const marker = new mapboxgl.Marker({
+      color: markerPreferences.value.marker_color,
+      scale: markerPreferences.value.marker_scale
+    })
+      .setLngLat([longitude, latitude])
+      .addTo(map.value)
+    markers.value.push(marker)
+  } catch (err) {
+    console.error('Error recording position:', err)
+    error.value = 'Error recording position: ' + err.message
+  }
+}
+
 const handlePositionUpdate = async (position) => {
   if (!isTracking.value || !currentRideId.value) return
 
@@ -479,12 +513,22 @@ const handlePositionUpdate = async (position) => {
     return
   }
 
-  // Always center the map on the current position (move the map, not the blue dot)
+  // Always center the map and update bearing
+  let bearing = 0
+  if (lastPosition.value) {
+    bearing = calculateBearing(
+      lastPosition.value.latitude,
+      lastPosition.value.longitude,
+      latitude,
+      longitude
+    )
+  }
   if (map.value) {
     map.value.flyTo({
       center: [longitude, latitude],
       zoom: 19,
       pitch: 60,
+      bearing: bearing,
       essential: true,
       duration: 500
     })
@@ -509,99 +553,22 @@ const handlePositionUpdate = async (position) => {
   }
 
   // --- Marker/route logic ---
-  // Always add a marker and record in ridez_routes every MARKER_INTERVAL_METERS (10m)
   if (!lastPosition.value) {
-    // First point: add marker and set lastPosition
-    try {
-      const { data: insertedPoint, error: insertError } = await client.from('ridez_routes').insert({
-        user_id: user.value.id,
-        ride_id: currentRideId.value,
-        latitude,
-        longitude,
-        distance_from_last_point: 0,
-        sequence_number: sequenceNumber.value++
-      }).select().single()
-      if (insertError) throw insertError
-      lastPosition.value = { latitude, longitude }
-      const marker = new mapboxgl.Marker({
-        color: markerPreferences.value.marker_color,
-        scale: markerPreferences.value.marker_scale
-      })
-        .setLngLat([longitude, latitude])
-        .addTo(map.value)
-      markers.value.push(marker)
-      return
-    } catch (err) {
-      console.error('Error recording first position:', err)
-      error.value = 'Error recording position: ' + err.message
-      return
-    }
+    // First point: always record
+    await recordMarkerAndRoute(latitude, longitude, 0)
+    lastPosition.value = { latitude, longitude }
+    return
   }
 
-  // Calculate distance from last marker
-  let prev = lastPosition.value
-  let dist = calculateDistance(prev.latitude, prev.longitude, latitude, longitude)
-  if (dist < 1) return // Ignore noise
-
+  // Only record if moved at least 10m from last marker
+  const dist = calculateDistance(
+    lastPosition.value.latitude,
+    lastPosition.value.longitude,
+    latitude,
+    longitude
+  )
   if (dist >= MARKER_INTERVAL_METERS) {
-    // Interpolate points every MARKER_INTERVAL_METERS (10m)
-    const points = interpolatePoints(prev.latitude, prev.longitude, latitude, longitude, MARKER_INTERVAL_METERS)
-    // Add all interpolated points (if any), then the current point
-    for (const pt of points) {
-      try {
-        const { data: insertedPoint, error: insertError } = await client.from('ridez_routes').insert({
-          user_id: user.value.id,
-          ride_id: currentRideId.value,
-          latitude: pt.latitude,
-          longitude: pt.longitude,
-          distance_from_last_point: MARKER_INTERVAL_METERS,
-          sequence_number: sequenceNumber.value++
-        }).select().single()
-        if (insertError) throw insertError
-        const marker = new mapboxgl.Marker({
-          color: markerPreferences.value.marker_color,
-          scale: markerPreferences.value.marker_scale
-        })
-          .setLngLat([pt.longitude, pt.latitude])
-          .addTo(map.value)
-        markers.value.push(marker)
-        prev = { latitude: pt.latitude, longitude: pt.longitude }
-      } catch (err) {
-        console.error('Error recording interpolated position:', err)
-        error.value = 'Error recording position: ' + err.message
-      }
-    }
-    // Add the actual GPS point if not exactly on a 10m interval
-    const lastPt = points.length > 0 ? points[points.length - 1] : lastPosition.value
-    if (lastPt.latitude !== latitude || lastPt.longitude !== longitude) {
-      const lastSegDist = calculateDistance(lastPt.latitude, lastPt.longitude, latitude, longitude)
-      try {
-        const { data: insertedPoint, error: insertError } = await client.from('ridez_routes').insert({
-          user_id: user.value.id,
-          ride_id: currentRideId.value,
-          latitude,
-          longitude,
-          distance_from_last_point: lastSegDist,
-          sequence_number: sequenceNumber.value++
-        }).select().single()
-        if (insertError) throw insertError
-        const marker = new mapboxgl.Marker({
-          color: markerPreferences.value.marker_color,
-          scale: markerPreferences.value.marker_scale
-        })
-          .setLngLat([longitude, latitude])
-          .addTo(map.value)
-        markers.value.push(marker)
-        lastPosition.value = { latitude, longitude }
-      } catch (err) {
-        console.error('Error recording final position:', err)
-        error.value = 'Error recording position: ' + err.message
-      }
-    } else {
-      lastPosition.value = prev
-    }
-  } else {
-    // Less than 10m, just update lastPosition for next time
+    await recordMarkerAndRoute(latitude, longitude, dist)
     lastPosition.value = { latitude, longitude }
   }
 }
