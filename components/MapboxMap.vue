@@ -537,10 +537,20 @@ const handlePositionUpdate = async (position) => {
     if (currentLocationMarker.value) currentLocationMarker.value.remove();
     if (currentAccuracyCircle.value) currentAccuracyCircle.value.remove();
 
-    // Add blue dot marker (always at the center)
+    // Add car icon marker (rotated to match bearing)
+    const el = document.createElement('div');
+    el.style.backgroundImage = "url('../assets/images/car-top-view-icon-11560.png')";
+    el.style.width = '40px';
+    el.style.height = '40px';
+    el.style.backgroundSize = 'contain';
+    el.style.backgroundRepeat = 'no-repeat';
+    el.style.backgroundPosition = 'center';
+    el.style.borderRadius = '50%';
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+    el.style.transform = `rotate(${bearing}deg)`;
+    el.style.transition = 'transform 0.3s';
     currentLocationMarker.value = new mapboxgl.Marker({
-      color: '#007AFF', // iOS blue
-      scale: 1.2
+      element: el
     })
       .setLngLat([longitude, latitude])
       .addTo(map.value);
@@ -729,6 +739,18 @@ const stopTrip = async () => {
   }
   setTracking(false)
   showEndTripModal.value = true
+
+  // Remove all markers from the map and clear the array
+  markers.value.forEach(marker => marker.remove())
+  markers.value = []
+
+  // Reset map bearing to North (0 degrees)
+  if (map.value) {
+    map.value.flyTo({
+      bearing: 0,
+      duration: 500
+    })
+  }
 
   // Release KeepAwake
   try {
