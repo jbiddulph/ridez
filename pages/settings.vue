@@ -167,6 +167,27 @@
             />
           </div>
 
+          <!-- Car Icon -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium mb-2">Car Icon</label>
+            <div class="flex gap-4 items-center">
+              <label v-for="icon in availableIcons" :key="icon.value || 'blank'" class="flex flex-col items-center cursor-pointer">
+                <input
+                  type="radio"
+                  name="my_icon"
+                  :value="icon.value"
+                  v-model="markerPreferences.my_icon"
+                  class="mb-2"
+                />
+                <span v-if="icon.value">
+                  <img :src="icon.value" alt="icon" class="w-10 h-10 object-contain rounded-full border" />
+                </span>
+                <span v-else class="w-10 h-10 flex items-center justify-center border rounded-full bg-gray-100 text-xs">None</span>
+                <span class="text-xs mt-1">{{ icon.label }}</span>
+              </label>
+            </div>
+          </div>
+
           <!-- Save Button -->
           <button
             @click="saveSettings"
@@ -215,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, reactive } from 'vue'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
 import { useRouter } from 'vue-router'
 import { Capacitor } from '@capacitor/core'
@@ -236,6 +257,14 @@ const markerScale = ref(0.5)
 const wakeLock = ref(null)
 const { isDarkMode, fetchDarkMode, setDarkMode } = useDarkMode()
 
+const markerPreferences = reactive({ my_icon: null })
+
+const availableIcons = [
+  { label: 'Blank', value: null },
+  { label: 'Car', value: '/assets/images/car-top-view-icon-11560.png' },
+  { label: 'Chick', value: '/assets/images/chick.png' }
+]
+
 const loadSettings = async () => {
   if (!user.value) {
     console.log('[DEBUG] No user loaded in loadSettings');
@@ -246,7 +275,7 @@ const loadSettings = async () => {
     console.log('[DEBUG] Loading settings for user:', user.value.id)
     const { data, error } = await client
       .from('ridez_settings')
-      .select('marker_color, marker_scale')
+      .select('marker_color, marker_scale, my_icon')
       .eq('user_id', user.value.id)
       .single()
 
@@ -258,6 +287,7 @@ const loadSettings = async () => {
       console.log('[DEBUG] Loaded marker settings:', data)
       markerColor.value = data.marker_color || '#00FF00'
       markerScale.value = data.marker_scale || 0.5
+      markerPreferences.my_icon = data.my_icon ?? null
     } else {
       console.log('[DEBUG] No data found for user, using defaults')
     }
@@ -290,7 +320,9 @@ const saveSettings = async () => {
       .upsert({
         user_id: user.value.id,
         marker_color: markerColor.value,
-        marker_scale: markerScale.value
+        marker_scale: markerScale.value,
+        dark_mode: isDarkMode.value,
+        my_icon: markerPreferences.my_icon
       }, { onConflict: 'user_id' })
 
     if (error) throw error

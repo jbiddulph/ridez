@@ -267,7 +267,7 @@ const fetchMarkerPreferences = async () => {
     console.log('Fetching marker settings for user:', user.value.id)
     const { data, error: fetchError } = await client
       .from('ridez_settings')
-      .select('marker_color, marker_scale')
+      .select('marker_color, marker_scale, my_icon')
       .eq('user_id', user.value.id)
       .single()
 
@@ -280,7 +280,8 @@ const fetchMarkerPreferences = async () => {
           .insert({
             user_id: user.value.id,
             marker_color: '#00FF00',
-            marker_scale: 0.5
+            marker_scale: 0.5,
+            my_icon: '/assets/images/car-top-view-icon-11560.png'
           })
           .select()
           .single()
@@ -292,7 +293,8 @@ const fetchMarkerPreferences = async () => {
 
         markerPreferences.value = {
           marker_color: newSettings.marker_color,
-          marker_scale: newSettings.marker_scale
+          marker_scale: newSettings.marker_scale,
+          my_icon: newSettings.my_icon
         }
       } else {
         console.error('Error fetching marker settings:', fetchError)
@@ -302,7 +304,8 @@ const fetchMarkerPreferences = async () => {
       console.log('Found marker settings:', data)
       markerPreferences.value = {
         marker_color: data.marker_color,
-        marker_scale: data.marker_scale
+        marker_scale: data.marker_scale,
+        my_icon: data.my_icon
       }
 
       // Update any existing markers with new preferences
@@ -380,7 +383,8 @@ const updateMarkerPreferences = async (newColor, newScale) => {
     console.log('Successfully updated marker preferences:', result)
     markerPreferences.value = {
       marker_color: result.marker_color,
-      marker_scale: result.marker_scale
+      marker_scale: result.marker_scale,
+      my_icon: result.my_icon
     }
 
     // Update existing markers
@@ -539,14 +543,15 @@ const handlePositionUpdate = async (position) => {
 
     // Add car icon marker (rotated to match bearing)
     const el = document.createElement('div');
-    el.style.backgroundImage = "url('/assets/images/car-top-view-icon-11560.png')";
-    el.style.width = '40px';
-    el.style.height = '40px';
+    const iconUrl = markerPreferences.value.my_icon || '';
+    el.style.backgroundImage = `url('${iconUrl}')`;
+    el.style.width = '80px';
+    el.style.height = '80px';
     el.style.backgroundSize = 'contain';
     el.style.backgroundRepeat = 'no-repeat';
     el.style.backgroundPosition = 'center';
     el.style.borderRadius = '50%';
-    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+    // el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
     el.style.transform = `rotate(${bearing}deg)`;
     el.style.transition = 'transform 0.3s';
     el.style.zIndex = '50';
