@@ -222,6 +222,8 @@ import { Geolocation } from '@capacitor/geolocation'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
 import { useRouter } from 'vue-router'
 import { useTripTracking } from '~/composables/useTripTracking'
+import { useDarkMode } from '~/composables/useDarkMode'
+import { KeepAwake } from '@capacitor-community/keep-awake'
 
 const mapContainer = ref(null)
 const map = ref(null)
@@ -254,6 +256,8 @@ const endTripDetails = ref({
 const { setTracking } = useTripTracking()
 const currentLocationMarker = ref(null)
 const currentAccuracyCircle = ref(null)
+const { isDarkMode, fetchDarkMode } = useDarkMode()
+const MARKER_INTERVAL_METERS = 10 // Change from 20 to 10 meters for testing
 
 // Function to fetch user marker preferences
 const fetchMarkerPreferences = async () => {
@@ -400,6 +404,7 @@ watch(user, (newUser) => {
   if (newUser) {
     fetchMarkerPreferences()
     console.log('Marker preferences:', markerPreferences.value)
+    fetchDarkMode()
   } else {
     router.push('/settings')
   }
@@ -474,22 +479,21 @@ const handlePositionUpdate = async (position) => {
     return
   }
 
-  const distance = lastPosition.value
-    ? calculateDistance(
-        lastPosition.value.latitude,
-        lastPosition.value.longitude,
-        latitude,
-        longitude
-      )
-    : 0
-
-  // Always update the blue dot and accuracy circle
+  // Always center the map on the current position (move the map, not the blue dot)
   if (map.value) {
+    map.value.flyTo({
+      center: [longitude, latitude],
+      zoom: 19,
+      pitch: 60,
+      essential: true,
+      duration: 500
+    })
+
     // Remove previous marker/circle
     if (currentLocationMarker.value) currentLocationMarker.value.remove();
     if (currentAccuracyCircle.value) currentAccuracyCircle.value.remove();
 
-    // Add blue dot marker
+    // Add blue dot marker (always at the center)
     currentLocationMarker.value = new mapboxgl.Marker({
       color: '#007AFF', // iOS blue
       scale: 1.2
@@ -499,42 +503,39 @@ const handlePositionUpdate = async (position) => {
 
     // Add accuracy circle (optional)
     if (accuracy && accuracy < 100) {
-      const circle = new mapboxgl.Circle({
-        center: [longitude, latitude],
-        radius: accuracy,
-        color: '#007AFF',
-        fillOpacity: 0.1,
-        strokeOpacity: 0.3
-      });
-      currentAccuracyCircle.value = circle.addTo(map.value);
+      // Note: Mapbox GL JS does not have a built-in Circle, so this is a placeholder for your implementation
+      // You can use a GeoJSON source/layer for a real accuracy circle if needed
     }
-
-    // Always center the map on the current position
-    map.value.flyTo({
-      center: [longitude, latitude],
-      zoom: 19,
-      pitch: 60,
-      essential: true,
-      duration: 500
-    });
   }
 
-  // Calculate bearing and update map orientation
-  if (lastPosition.value && (latitude !== lastPosition.value.latitude || longitude !== lastPosition.value.longitude)) {
-    const bearing = calculateBearing(
-      lastPosition.value.latitude,
-      lastPosition.value.longitude,
-      latitude,
-      longitude
-    );
-    map.value.flyTo({
-      center: [longitude, latitude],
-      zoom: 19,
-      pitch: 60,
-      bearing: bearing,
-      essential: true,
-      duration: 500
-    });
+  // --- Marker/route logic ---
+  // Always add a marker and record in ridez_routes every MARKER_INTERVAL_METERS (10m)
+  if (!lastPosition.value) {
+    // First point: add marker and set lastPosition
+    try {
+      const { data: insertedPoint, error: insertError } = await client.from('ridez_routes').insert({
+        user_id: user.value.id,
+        ride_id: currentRideId.value,
+        latitude,
+        longitude,
+        distance_from_last_point: 0,
+        sequence_number: sequenceNumber.value++
+      }).select().single()
+      if (insertError) throw insertError
+      lastPosition.value = { latitude, longitude }
+      const marker = new mapboxgl.Marker({
+        color: markerPreferences.value.marker_color,
+        scale: markerPreferences.value.marker_scale
+      })
+        .setLngLat([longitude, latitude])
+        .addTo(map.value)
+      markers.value.push(marker)
+      return
+    } catch (err) {
+      console.error('Error recording first position:', err)
+      error.value = 'Error recording position: ' + err.message
+      return
+    }
   }
 
   // Calculate distance from last marker
@@ -542,9 +543,9 @@ const handlePositionUpdate = async (position) => {
   let dist = calculateDistance(prev.latitude, prev.longitude, latitude, longitude)
   if (dist < 1) return // Ignore noise
 
-  if (dist >= 20) {
-    // Interpolate points every 20m
-    const points = interpolatePoints(prev.latitude, prev.longitude, latitude, longitude, 20)
+  if (dist >= MARKER_INTERVAL_METERS) {
+    // Interpolate points every MARKER_INTERVAL_METERS (10m)
+    const points = interpolatePoints(prev.latitude, prev.longitude, latitude, longitude, MARKER_INTERVAL_METERS)
     // Add all interpolated points (if any), then the current point
     for (const pt of points) {
       try {
@@ -553,7 +554,7 @@ const handlePositionUpdate = async (position) => {
           ride_id: currentRideId.value,
           latitude: pt.latitude,
           longitude: pt.longitude,
-          distance_from_last_point: 20,
+          distance_from_last_point: MARKER_INTERVAL_METERS,
           sequence_number: sequenceNumber.value++
         }).select().single()
         if (insertError) throw insertError
@@ -564,23 +565,13 @@ const handlePositionUpdate = async (position) => {
           .setLngLat([pt.longitude, pt.latitude])
           .addTo(map.value)
         markers.value.push(marker)
-        // Update map bearing to direction of movement
-        const bearing = calculateBearing(prev.latitude, prev.longitude, pt.latitude, pt.longitude)
-        map.value.flyTo({
-          center: [pt.longitude, pt.latitude],
-          zoom: 19,
-          pitch: 60,
-          bearing: bearing,
-          essential: true,
-          duration: 500
-        })
         prev = { latitude: pt.latitude, longitude: pt.longitude }
       } catch (err) {
         console.error('Error recording interpolated position:', err)
         error.value = 'Error recording position: ' + err.message
       }
     }
-    // Add the actual GPS point if not exactly on a 20m interval
+    // Add the actual GPS point if not exactly on a 10m interval
     const lastPt = points.length > 0 ? points[points.length - 1] : lastPosition.value
     if (lastPt.latitude !== latitude || lastPt.longitude !== longitude) {
       const lastSegDist = calculateDistance(lastPt.latitude, lastPt.longitude, latitude, longitude)
@@ -601,16 +592,6 @@ const handlePositionUpdate = async (position) => {
           .setLngLat([longitude, latitude])
           .addTo(map.value)
         markers.value.push(marker)
-        // Update map bearing
-        const bearing = calculateBearing(lastPt.latitude, lastPt.longitude, latitude, longitude)
-        map.value.flyTo({
-          center: [longitude, latitude],
-          zoom: 19,
-          pitch: 60,
-          bearing: bearing,
-          essential: true,
-          duration: 500
-        })
         lastPosition.value = { latitude, longitude }
       } catch (err) {
         console.error('Error recording final position:', err)
@@ -620,7 +601,7 @@ const handlePositionUpdate = async (position) => {
       lastPosition.value = prev
     }
   } else {
-    // Less than 20m, just update lastPosition for next time
+    // Less than 10m, just update lastPosition for next time
     lastPosition.value = { latitude, longitude }
   }
 }
@@ -657,6 +638,14 @@ const startTrip = async () => {
     isFollowing.value = true
     showTitleInput.value = false
     rideTitle.value = '' // Clear the title input
+
+    // Enable KeepAwake
+    try {
+      await KeepAwake.keepAwake()
+      console.log('KeepAwake enabled')
+    } catch (err) {
+      console.error('Error enabling KeepAwake:', err)
+    }
 
     // Get current position
     const position = await Geolocation.getCurrentPosition({
@@ -773,12 +762,20 @@ const stopTrip = async () => {
   }
   setTracking(false)
   showEndTripModal.value = true
+
+  // Release KeepAwake
+  try {
+    await KeepAwake.allowSleep()
+    console.log('KeepAwake released')
+  } catch (err) {
+    console.error('Error releasing KeepAwake:', err)
+  }
 }
 
 // Add new function to handle end trip form submission
 const submitEndTripDetails = async () => {
   try {
-    if (!currentRideId.value) {
+    if (!currentRideId.value || typeof currentRideId.value !== 'string' || currentRideId.value === 'null') {
       throw new Error('No active ride found')
     }
 
@@ -985,6 +982,8 @@ onMounted(async () => {
       error.value = 'Error loading map: ' + e.message
       loading.value = false
     })
+
+    fetchDarkMode()
 
   } catch (err) {
     error.value = 'Error loading map: ' + err.message
