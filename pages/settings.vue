@@ -262,7 +262,10 @@ const markerPreferences = reactive({ my_icon: null })
 const availableIcons = [
   { label: 'Blank', value: null },
   { label: 'Car', value: '/assets/images/car-top-view-icon-11560.png' },
-  { label: 'Chick', value: '/assets/images/chick.png' }
+  { label: 'Chick', value: '/assets/images/chick.png' },
+  { label: 'UFO', value: '/assets/images/ufo.png' },
+  { label: 'Taxi', value: '/assets/images/Taxi_Icon.png' },
+  { label: 'Uber', value: '/assets/images/uber.png' },
 ]
 
 const loadSettings = async () => {
