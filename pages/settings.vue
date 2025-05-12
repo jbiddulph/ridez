@@ -286,7 +286,8 @@ const saveSettings = async () => {
       .upsert({
         user_id: user.value.id,
         marker_color: markerColor.value,
-        marker_scale: markerScale.value
+        marker_scale: markerScale.value,
+        dark_mode: isDarkMode.value
       }, { onConflict: 'user_id' })
 
     if (error) throw error
