@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-100 pb-16">
+  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 pb-16">
     <slot />
     <!-- Bottom Tab Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">

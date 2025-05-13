@@ -169,9 +169,9 @@
 
           <!-- Car Icon -->
           <div class="mb-6">
-            <label class="block text-sm font-medium mb-2">Car Icon</label>
+            <label class="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Car Icon</label>
             <div class="flex gap-4 items-center">
-              <label v-for="icon in availableIcons" :key="icon.value || 'blank'" class="flex flex-col items-center cursor-pointer">
+              <label v-for="icon in availableIcons" :key="icon.value || 'blank'" class="flex flex-col items-center cursor-pointer text-gray-900 dark:text-white">
                 <input
                   type="radio"
                   name="my_icon"
@@ -182,7 +182,7 @@
                 <span v-if="icon.value">
                   <img :src="icon.value" alt="icon" class="w-10 h-10 object-contain rounded-full border" />
                 </span>
-                <span v-else class="w-10 h-10 flex items-center justify-center border rounded-full bg-gray-100 text-xs">None</span>
+                <span v-else class="w-10 h-10 flex items-center justify-center border rounded-full bg-gray-500 text-xs text-white">None</span>
                 <span class="text-xs mt-1">{{ icon.label }}</span>
               </label>
             </div>
@@ -477,7 +477,7 @@ input[type="range"]::-moz-range-thumb {
   border: none;
 }
 
-.dark input[type="range"] {
+/* .dark input[type="range"] {
   background: #374151;
 }
 
@@ -487,5 +487,5 @@ input[type="range"]::-moz-range-thumb {
 
 .dark input[type="range"]::-moz-range-thumb {
   background: #60a5fa;
-}
+} */
 </style> 

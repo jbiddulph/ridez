@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-gray-100 py-12">
+  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="bg-white rounded-lg shadow-lg">
+      <div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg shadow-lg">
         <!-- Fixed Header -->
         <div class="p-6 border-b">
           <div class="flex justify-between items-center">
@@ -10,7 +10,7 @@
               <!-- Month Dropdown -->
               <select 
                 v-model="selectedMonth" 
-                class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2"
               >
                 <option v-for="(month, index) in months" :key="index" :value="index">
                   {{ month }}
@@ -20,7 +20,7 @@
               <!-- Year Dropdown -->
               <select 
                 v-model="selectedYear" 
-                class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                class="rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2"
               >
                 <option v-for="year in years" :key="year" :value="year">
                   {{ year }}
@@ -34,12 +34,12 @@
         <div class="p-6 overflow-y-auto">
           <div v-if="loading" class="text-center py-4">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p class="mt-2 text-gray-600">Loading trips...</p>
+            <p class="mt-2 text-gray-900 dark:text-gray-100">Loading trips...</p>
           </div>
           <div v-else-if="error" class="text-red-600 p-4 bg-red-100 rounded-lg">
             {{ error }}
           </div>
-          <div v-else-if="filteredTrips.length === 0" class="text-center py-8 text-gray-600">
+          <div v-else-if="filteredTrips.length === 0" class="text-center py-8 bg-white dark:bg-gray-800 text-gray-900 dark:text-white ">
             No trips recorded for the selected period. Start tracking your first trip!
           </div>
           <div v-else class="space-y-4">
@@ -50,7 +50,7 @@
                 class="w-full text-left flex justify-between items-center py-4 focus:outline-none"
               >
                 <div class="flex items-center">
-                  <h2 class="text-xl font-semibold text-gray-800">
+                  <h2 class="text-xl font-semibold bg-white dark:bg-gray-800 text-gray-900 dark:text-white ">
                     {{ formatDate(date) }}
                     <span class="ml-2 text-sm font-normal text-gray-500">
                       ({{ dayTrips.length }} {{ dayTrips.length === 1 ? 'trip' : 'trips' }})
@@ -71,7 +71,6 @@
               </button>
               <div 
                 v-show="openDays[date]"
-                class="pb-4"
               >
                 <div class="space-y-4">
                   <div 
@@ -83,7 +82,7 @@
                     <div class="flex justify-between items-start">
                       <div>
                         <h3 class="font-semibold text-lg">{{ trip.title }}</h3>
-                        <p class="text-sm text-gray-600">
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
                           {{ new Date(trip.created_at).toLocaleTimeString() }}
                         </p>
                       </div>
@@ -98,7 +97,7 @@
                         </span>
                       </div>
                     </div>
-                    <div class="mt-2 text-sm text-gray-600">
+                    <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
                       <p v-if="trip.amount">
                         {{ trip.transaction_type === 'spending' ? 'Spent' : 'Earned' }}: ${{ trip.amount }}
                       </p>

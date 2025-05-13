@@ -896,6 +896,8 @@ const toggleTrip = () => {
 
 // Initialize map
 onMounted(async () => {
+  // if (typeof window === 'undefined') return; // Only run on client
+
   try {
     const token = useRuntimeConfig().public.mapboxToken
     if (!token) {

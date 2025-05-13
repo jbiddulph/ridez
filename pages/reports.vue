@@ -1,74 +1,76 @@
 <template>
-  <div class="min-h-screen bg-gray-100 py-8">
+  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-8">
     <div class="max-w-4xl mx-auto px-4">
-      <h1 class="text-2xl font-bold mb-6">Reports</h1>
-      <div class="flex flex-wrap gap-4 mb-6 items-center">
-        <label class="block">
-          <span class="text-gray-700">Month</span>
-          <select v-model="selectedMonth" class="ml-2 px-2 py-1 rounded border border-gray-300">
-            <option v-for="(month, idx) in months" :key="idx" :value="idx+1">{{ month }}</option>
-          </select>
-        </label>
-        <label class="block">
-          <span class="text-gray-700">Year</span>
-          <select v-model="selectedYear" class="ml-2 px-2 py-1 rounded border border-gray-300">
-            <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
-          </select>
-        </label>
+      <h1 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Reports</h1>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <div class="flex flex-wrap gap-4 mb-6 items-center">
+          <label class="block text-gray-700 dark:text-gray-300">
+            <span>Month</span>
+            <select v-model="selectedMonth" class="ml-2 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              <option v-for="(month, idx) in months" :key="idx" :value="idx+1">{{ month }}</option>
+            </select>
+          </label>
+          <label class="block text-gray-700 dark:text-gray-300">
+            <span>Year</span>
+            <select v-model="selectedYear" class="ml-2 px-2 py-1 rounded border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+              <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
+            </select>
+          </label>
+        </div>
+        <div id="amchart-reports" class="bg-white rounded-lg shadow-lg p-6" style="height: 400px;"></div>
       </div>
-      <div id="amchart-reports" class="bg-white rounded-lg shadow-lg p-6" style="height: 400px;"></div>
 
       <!-- Earnings Table -->
-      <div class="mt-8 overflow-x-auto">
-        <h2 class="text-lg font-semibold mb-2">Daily Earnings</h2>
-        <table class="min-w-full bg-white rounded shadow overflow-hidden">
+      <div class="mt-8 overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Daily Earnings</h2>
+        <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
           <thead>
             <tr>
-              <th class="px-4 py-2 text-left text-gray-700">Day</th>
-              <th class="px-4 py-2 text-left text-green-700">Earnings</th>
-              <th class="px-4 py-2 text-left text-gray-700">Trips</th>
+              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Day</th>
+              <th class="px-4 py-2 text-left text-green-700 dark:text-green-400">Earnings</th>
+              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Trips</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in chartData" :key="'earn-' + row.day">
-              <td class="px-4 py-2">{{ row.day }}</td>
-              <td class="px-4 py-2 text-green-700 font-semibold">{{ row.earning.toFixed(2) }}</td>
-              <td class="px-4 py-2 text-gray-600 whitespace-nowrap">{{ row.earningTrips }}</td>
+              <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.day }}</td>
+              <td class="px-4 py-2 text-green-900 dark:text-green-300">{{ row.earning.toFixed(2) }}</td>
+              <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.earningTrips }}</td>
             </tr>
           </tbody>
           <tfoot>
-            <tr class="bg-gray-50">
-              <td class="px-4 py-2 font-bold">Total</td>
-              <td class="px-4 py-2 text-green-900 font-bold">{{ earningsTotal.toFixed(2) }}</td>
-              <td></td>
+            <tr class="bg-gray-50 dark:bg-gray-700">
+              <td class="px-4 py-2 font-bold text-gray-900 dark:text-white">Total</td>
+              <td class="px-4 py-2 text-green-900 dark:text-green-300 font-bold">{{ earningsTotal.toFixed(2) }}</td>
+              <td class="px-4 py-2 text-gray-900 dark:text-white font-bold">{{ earningsTripsTotal }}</td>
             </tr>
           </tfoot>
         </table>
       </div>
 
       <!-- Spending Table -->
-      <div class="mt-8 overflow-x-auto">
-        <h2 class="text-lg font-semibold mb-2">Daily Spending</h2>
-        <table class="min-w-full bg-white rounded shadow overflow-hidden">
+      <div class="mt-8 overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Daily Spending</h2>
+        <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
           <thead>
             <tr>
-              <th class="px-4 py-2 text-left text-gray-700">Day</th>
-              <th class="px-4 py-2 text-left text-red-700">Spending</th>
-              <th class="px-4 py-2 text-left text-gray-700">Trips</th>
+              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Day</th>
+              <th class="px-4 py-2 text-left text-red-700 dark:text-red-400">Spending</th>
+              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Trips</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in chartData" :key="'spend-' + row.day">
-              <td class="px-4 py-2">{{ row.day }}</td>
-              <td class="px-4 py-2 text-red-700 font-semibold">{{ row.spending.toFixed(2) }}</td>
-              <td class="px-4 py-2 text-gray-600 whitespace-nowrap">{{ row.spendingTrips }}</td>
+              <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.day }}</td>
+              <td class="px-4 py-2 text-red-900 dark:text-red-300">{{ row.spending.toFixed(2) }}</td>
+              <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.spendingTrips }}</td>
             </tr>
           </tbody>
           <tfoot>
-            <tr class="bg-gray-50">
-              <td class="px-4 py-2 font-bold">Total</td>
-              <td class="px-4 py-2 text-red-900 font-bold">{{ spendingTotal.toFixed(2) }}</td>
-              <td></td>
+            <tr class="bg-gray-50 dark:bg-gray-700">
+              <td class="px-4 py-2 font-bold text-gray-900 dark:text-white">Total</td>
+              <td class="px-4 py-2 text-red-900 dark:text-red-300 font-bold">{{ spendingTotal.toFixed(2) }}</td>
+              <td class="px-4 py-2 text-gray-900 dark:text-white font-bold">{{ spendingTripsTotal }}</td>
             </tr>
           </tfoot>
         </table>
@@ -83,9 +85,11 @@ import * as am5 from '@amcharts/amcharts5'
 import * as am5xy from '@amcharts/amcharts5/xy'
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
+import { useDarkMode } from '~/composables/useDarkMode'
 
 const client = useSupabaseClient()
 const user = useSupabaseUser()
+const { isDarkMode } = useDarkMode()
 
 const now = new Date()
 const months = [
@@ -144,7 +148,35 @@ const renderChart = async () => {
   chartData.value = await fetchData()
   if (!chart) {
     let root = am5.Root.new('amchart-reports')
-    root.setThemes([am5themes_Animated.new(root)])
+
+    // Custom theme for dark mode
+    if (isDarkMode.value) {
+      root.setThemes([
+        am5themes_Animated.new(root),
+        am5.Theme.new(root, {
+          setup: function(target) {
+            if (target instanceof am5.Label) {
+              target.setAll({ fill: am5.color(0xF3F4F6) }) // Tailwind gray-100
+            }
+            if (target instanceof am5.AxisRenderer) {
+              target.setAll({ stroke: am5.color(0x6B7280) }) // Tailwind gray-500
+            }
+            if (target instanceof am5.Grid) {
+              target.setAll({ stroke: am5.color(0x374151) }) // Tailwind gray-700
+            }
+            if (target instanceof am5.Tooltip) {
+              target.setAll({ fill: am5.color(0x111827), labelText: "{valueY}" }) // Tailwind gray-900
+            }
+            if (target instanceof am5.Container) {
+              target.setAll({ background: am5.color(0x1F2937) }) // Tailwind gray-800
+            }
+          }
+        })
+      ])
+    } else {
+      root.setThemes([am5themes_Animated.new(root)])
+    }
+
     chart = root.container.children.push(
       am5xy.XYChart.new(root, {
         panX: false,

@@ -1,83 +1,56 @@
 <template>
-  <div class="min-h-screen bg-white">
-    <!-- Header -->
-    <div class="sticky top-0 z-10 bg-white border-b border-gray-200">
-      <div class="px-4 py-4 flex items-center">
-        <button 
-          @click="router.back()"
-          class="mr-4 text-gray-600 hover:text-gray-900"
-        >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <h1 class="text-xl font-semibold text-gray-900">Trip Details</h1>
-      </div>
-    </div>
-
-    <!-- Loading State -->
-    <div v-if="loading" class="flex items-center justify-center min-h-[50vh]">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-    </div>
-
-    <!-- Error State -->
-    <div v-else-if="error" class="p-4 text-red-600">
-      {{ error }}
-    </div>
-
-    <!-- Content -->
-    <div v-else-if="trip" class="p-4">
-      <!-- Trip Info -->
-      <div class="mb-6">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <h4 class="text-lg font-medium text-gray-900">{{ trip.title }}</h4>
-            <p class="text-sm text-gray-500">
-              {{ new Date(trip.created_at).toLocaleDateString() }} at 
-              {{ new Date(trip.created_at).toLocaleTimeString() }}
-            </p>
+  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-8">
+    <div class="max-w-3xl mx-auto px-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h1 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Trip Details</h1>
+        <div v-if="loading" class="text-center py-4 text-gray-900 dark:text-gray-100">Loading trip details...</div>
+        <div v-else-if="error" class="text-red-600 p-4 bg-red-100 rounded-lg">{{ error }}</div>
+        <div v-else>
+          <div class="mb-4">
+            <span class="block text-gray-700 dark:text-gray-300">Title:</span>
+            <span class="text-gray-900 dark:text-white font-semibold">{{ trip.title }}</span>
           </div>
-          <div class="text-right">
-            <span class="inline-block px-3 py-1 text-sm rounded-full" 
-                  :class="{
-                    'bg-green-100 text-green-800': trip.transport_type === 'walk',
-                    'bg-blue-100 text-blue-800': trip.transport_type === 'cycle',
-                    'bg-purple-100 text-purple-800': trip.transport_type === 'drive'
-                  }">
-              {{ trip.transport_type }}
-            </span>
+          <div class="mb-4">
+            <span class="block text-gray-700 dark:text-gray-300">Date:</span>
+            <span class="text-gray-900 dark:text-white">{{ formatDate(trip.created_at) }}</span>
           </div>
-        </div>
-      </div>
-
-      <!-- Map -->
-      <div class="mb-6 h-96 rounded-lg overflow-hidden border border-gray-200">
-        <div ref="mapContainer" class="w-full h-full"></div>
-      </div>
-
-      <!-- Trip Details -->
-      <div class="grid grid-cols-2 gap-6">
-        <div>
-          <h4 class="text-lg font-medium text-gray-900 mb-4">Trip Information</h4>
-          <dl class="space-y-3">
-            <div>
-              <dt class="text-sm font-medium text-gray-500">Trip Duration</dt>
-              <dd class="text-base text-gray-900">{{ calculateTripDuration }}</dd>
+          <div class="mb-4">
+            <span class="block text-gray-700 dark:text-gray-300">Transport Type:</span>
+            <span class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">{{ trip.transport_type }}</span>
+          </div>
+          <div class="mb-4">
+            <span class="block text-gray-700 dark:text-gray-300">Transaction Type:</span>
+            <span class="px-3 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">{{ trip.transaction_type }}</span>
+          </div>
+          <div class="mb-4">
+            <span class="block text-gray-700 dark:text-gray-300">Amount:</span>
+            <span class="text-gray-900 dark:text-white">${{ trip.amount }}</span>
+          </div>
+          <div class="mb-4">
+            <span class="block text-gray-700 dark:text-gray-300">Notes:</span>
+            <span class="text-gray-900 dark:text-white">{{ trip.notes || 'None' }}</span>
+          </div>
+          <div v-if="trip.route && trip.route.length" class="mb-4">
+            <span class="block text-gray-700 dark:text-gray-300 mb-2">Route:</span>
+            <div class="bg-gray-50 dark:bg-gray-900 rounded p-4 overflow-x-auto">
+              <table class="min-w-full text-sm bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
+                <thead>
+                  <tr>
+                    <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">#</th>
+                    <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Latitude</th>
+                    <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Longitude</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(point, idx) in trip.route" :key="idx">
+                    <td class="px-4 py-2 text-gray-900 dark:text-white">{{ idx + 1 }}</td>
+                    <td class="px-4 py-2 text-gray-900 dark:text-white">{{ point.latitude }}</td>
+                    <td class="px-4 py-2 text-gray-900 dark:text-white">{{ point.longitude }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div v-if="trip.distance">
-              <dt class="text-sm font-medium text-gray-500">Distance</dt>
-              <dd class="text-base text-gray-900">{{ formatDistance(trip.distance) }}</dd>
-            </div>
-            <div v-if="trip.amount">
-              <dt class="text-sm font-medium text-gray-500">{{ trip.transaction_type === 'spending' ? 'Amount Spent' : 'Amount Earned' }}</dt>
-              <dd class="text-base text-gray-900">${{ trip.amount }}</dd>
-            </div>
-          </dl>
-        </div>
-        <div>
-          <h4 class="text-lg font-medium text-gray-900 mb-4">Notes</h4>
-          <p v-if="trip.notes" class="text-gray-600">{{ trip.notes }}</p>
-          <p v-else class="text-gray-500 italic">No notes for this trip</p>
+          </div>
         </div>
       </div>
     </div>
@@ -236,5 +209,10 @@ onUnmounted(() => {
 
 .page-leave-to {
   transform: translateX(-100%);
+}
+
+.dark .modal-content {
+  background: #1f2937;
+  color: #fff;
 }
 </style> 
