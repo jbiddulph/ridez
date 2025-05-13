@@ -31,7 +31,7 @@ export default defineNuxtConfig({
     baseURL: '',
     buildAssetsDir: '/_nuxt/',
     head: {
-      title: 'Ridez',
+      title: 'Tripz',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' }

@@ -2,10 +2,10 @@
   <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h1 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">About Ridez</h1>
+        <h1 class="text-3xl font-bold mb-6 text-gray-900 dark:text-white">About Tripz</h1>
         <p class="text-gray-600 mb-4 text-gray-900 dark:text-white">
-          Ridez is your personal travel companion that helps you track and manage your journeys.
-          Whether you're walking, cycling, or driving, Ridez makes it easy to record your trips
+          Tripz is your personal travel companion that helps you track and manage your journeys.
+          Whether you're walking, cycling, or driving, Tripz makes it easy to record your trips
           and keep track of your expenses.
         </p>
         <p class="text-gray-600 mb-4 text-gray-900 dark:text-white">

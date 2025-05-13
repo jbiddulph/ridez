@@ -17,63 +17,83 @@
             </select>
           </label>
         </div>
-        <div id="amchart-reports" class="bg-white rounded-lg shadow-lg p-6" style="height: 400px;"></div>
-      </div>
-
-      <!-- Earnings Table -->
-      <div class="mt-8 overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Daily Earnings</h2>
-        <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Day</th>
-              <th class="px-4 py-2 text-left text-green-700 dark:text-green-400">Earnings</th>
-              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Trips</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in chartData" :key="'earn-' + row.day">
-              <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.day }}</td>
-              <td class="px-4 py-2 text-green-900 dark:text-green-300">{{ row.earning.toFixed(2) }}</td>
-              <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.earningTrips }}</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="bg-gray-50 dark:bg-gray-700">
-              <td class="px-4 py-2 font-bold text-gray-900 dark:text-white">Total</td>
-              <td class="px-4 py-2 text-green-900 dark:text-green-300 font-bold">{{ earningsTotal.toFixed(2) }}</td>
-              <td class="px-4 py-2 text-gray-900 dark:text-white font-bold">{{ earningsTripsTotal }}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      <!-- Spending Table -->
-      <div class="mt-8 overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Daily Spending</h2>
-        <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
-          <thead>
-            <tr>
-              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Day</th>
-              <th class="px-4 py-2 text-left text-red-700 dark:text-red-400">Spending</th>
-              <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Trips</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in chartData" :key="'spend-' + row.day">
-              <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.day }}</td>
-              <td class="px-4 py-2 text-red-900 dark:text-red-300">{{ row.spending.toFixed(2) }}</td>
-              <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.spendingTrips }}</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="bg-gray-50 dark:bg-gray-700">
-              <td class="px-4 py-2 font-bold text-gray-900 dark:text-white">Total</td>
-              <td class="px-4 py-2 text-red-900 dark:text-red-300 font-bold">{{ spendingTotal.toFixed(2) }}</td>
-              <td class="px-4 py-2 text-gray-900 dark:text-white font-bold">{{ spendingTripsTotal }}</td>
-            </tr>
-          </tfoot>
-        </table>
+        <!-- Tabs -->
+        <div class="flex justify-center mb-6">
+          <button
+            v-for="tab in tabs"
+            :key="tab.value"
+            @click="activeTab = tab.value"
+            :class="[
+              'px-6 py-2 rounded-t-lg font-semibold focus:outline-none transition',
+              activeTab === tab.value
+                ? 'bg-[#d8c856] text-[#6c6217] shadow'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            ]"
+            style="margin-right: 2px;"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+        <!-- Tab Panels -->
+        <div v-if="activeTab === 'chart'">
+          <div id="amchart-reports" class="bg-white rounded-lg shadow-lg p-6" style="height: 400px;"></div>
+        </div>
+        <div v-else-if="activeTab === 'earnings'">
+          <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Daily Earnings</h2>
+            <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
+              <thead>
+                <tr>
+                  <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Day</th>
+                  <th class="px-4 py-2 text-left text-green-700 dark:text-green-400">Earnings</th>
+                  <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Trips</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in chartData" :key="'earn-' + row.day">
+                  <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.day }}</td>
+                  <td class="px-4 py-2 text-green-900 dark:text-green-300">{{ row.earning.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.earningTrips }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-gray-50 dark:bg-gray-700">
+                  <td class="px-4 py-2 font-bold text-gray-900 dark:text-white">Total</td>
+                  <td class="px-4 py-2 text-green-900 dark:text-green-300 font-bold">{{ earningsTotal.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-gray-900 dark:text-white font-bold">{{ earningsTripsTotal }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+        <div v-else-if="activeTab === 'spending'">
+          <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Daily Spending</h2>
+            <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
+              <thead>
+                <tr>
+                  <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Day</th>
+                  <th class="px-4 py-2 text-left text-red-700 dark:text-red-400">Spending</th>
+                  <th class="px-4 py-2 text-left text-gray-700 dark:text-gray-300">Trips</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in chartData" :key="'spend-' + row.day">
+                  <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.day }}</td>
+                  <td class="px-4 py-2 text-red-900 dark:text-red-300">{{ row.spending.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.spendingTrips }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-gray-50 dark:bg-gray-700">
+                  <td class="px-4 py-2 font-bold text-gray-900 dark:text-white">Total</td>
+                  <td class="px-4 py-2 text-red-900 dark:text-red-300 font-bold">{{ spendingTotal.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-gray-900 dark:text-white font-bold">{{ spendingTripsTotal }}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -232,6 +252,13 @@ const renderChart = async () => {
     chart.series.getIndex(1).data.setAll(chartData.value)
   }
 }
+
+const tabs = [
+  { label: 'Chart', value: 'chart' },
+  { label: 'Daily Earnings', value: 'earnings' },
+  { label: 'Daily Spendings', value: 'spending' }
+]
+const activeTab = ref('chart')
 
 onMounted(() => {
   renderChart()

@@ -24,7 +24,7 @@
           </div>
           <div class="mb-4">
             <span class="block text-gray-700 dark:text-gray-300">Amount:</span>
-            <span class="text-gray-900 dark:text-white">${{ trip.amount }}</span>
+            <span class="text-gray-900 dark:text-white">£{{ trip.amount }}</span>
           </div>
           <div class="mb-4">
             <span class="block text-gray-700 dark:text-gray-300">Notes:</span>

@@ -1,7 +1,7 @@
 <template>
   <div class="relative w-full h-full">
     <div ref="mapContainer" class="absolute inset-0 w-full h-full"></div>
-    <div v-if="error" class="absolute top-4 left-4 right-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded z-10">
+    <div v-if="error" class="absolute top-[200px] left-4 right-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded z-10">
       {{ error }}
     </div>
     <div v-if="!authReady" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
@@ -12,7 +12,7 @@
     </div>
     <div class="absolute bottom-[200px] left-4 right-4 flex justify-center z-[100]">
       <button
-        v-if="!showTitleInput"
+        v-if="!showTitleInput && !loading && isStreetViewLoaded"
         @click="isTracking ? stopTrip() : showTitleInput = true"
         :class="[
           'px-6 py-3 rounded-full font-bold text-white shadow-lg transition-all',
@@ -257,7 +257,8 @@ const { setTracking } = useTripTracking()
 const currentLocationMarker = ref(null)
 const currentAccuracyCircle = ref(null)
 const { isDarkMode, fetchDarkMode } = useDarkMode()
-const MARKER_INTERVAL_METERS = 10 // Change from 20 to 10 meters for testing
+const MARKER_INTERVAL_METERS = 20 // Change back to 20
+const isStreetViewLoaded = ref(false)
 
 // Function to fetch user marker preferences
 const fetchMarkerPreferences = async () => {
@@ -772,19 +773,62 @@ const stopTrip = async () => {
 const submitEndTripDetails = async () => {
   try {
     if (!currentRideId.value || typeof currentRideId.value !== 'string' || currentRideId.value === 'null') {
-      throw new Error('No active ride found')
+      error.value = 'No active ride found';
+      showEndTripModal.value = false;
+      return;
     }
 
     // Log the raw input values
     console.log('Raw input values:', endTripDetails.value)
 
+    // --- Validation ---
+    const transportType = String(endTripDetails.value.transport_type || '').toLowerCase().trim()
+    const transactionType = String(endTripDetails.value.transaction_type || '').toLowerCase().trim()
+    const amountValue = endTripDetails.value.amount !== undefined && endTripDetails.value.amount !== null ? parseFloat(endTripDetails.value.amount) : 0
+
+    if (!transportType || !['walk', 'cycle', 'drive'].includes(transportType)) {
+      error.value = 'Please select a valid transport type (walk, cycle, or drive)';
+      showEndTripModal.value = false;
+      return;
+    }
+    if (!transactionType || !['spending', 'earning', 'na'].includes(transactionType)) {
+      error.value = 'Please select a valid transaction type (spending, earning, or N/A)';
+      showEndTripModal.value = false;
+      return;
+    }
+    if ((transactionType === 'spending' || transactionType === 'earning') && (!amountValue || isNaN(amountValue) || amountValue <= 0)) {
+      error.value = 'Please enter a valid amount greater than 0 for Spending or Earning.';
+      showEndTripModal.value = false;
+      return;
+    }
+
+    // --- Calculate total trip distance between first and last marker ---
+    let totalDistance = 0
+    try {
+      const { data: routePoints, error: routeError } = await client
+        .from('ridez_routes')
+        .select('latitude, longitude, sequence_number')
+        .eq('ride_id', currentRideId.value)
+        .order('sequence_number', { ascending: true })
+
+      if (routeError) throw routeError
+      if (routePoints && routePoints.length > 1) {
+        const start = routePoints[0]
+        const end = routePoints[routePoints.length - 1]
+        totalDistance = calculateDistance(start.latitude, start.longitude, end.latitude, end.longitude)
+      }
+    } catch (err) {
+      console.error('Error calculating trip distance:', err)
+    }
+
     // Format and validate the data
     const formattedData = {
       end_time: new Date().toISOString(),
-      transport_type: String(endTripDetails.value.transport_type || '').toLowerCase().trim(),
-      transaction_type: String(endTripDetails.value.transaction_type || '').toLowerCase().trim(),
-      amount: endTripDetails.value.amount ? parseFloat(endTripDetails.value.amount) : 0,
-      notes: String(endTripDetails.value.notes || '').trim()
+      transport_type: transportType,
+      transaction_type: transactionType,
+      amount: amountValue,
+      notes: String(endTripDetails.value.notes || '').trim(),
+      distance: totalDistance
     }
 
     // Log the formatted data
@@ -894,6 +938,17 @@ const toggleTrip = () => {
   }
 }
 
+// Watch for changes to endTripDetails fields and clear error and reopen modal if needed
+watch(
+  () => [endTripDetails.value.transport_type, endTripDetails.value.transaction_type, endTripDetails.value.amount],
+  () => {
+    if (error.value) {
+      error.value = ''
+      showEndTripModal.value = true
+    }
+  }
+)
+
 // Initialize map
 onMounted(async () => {
   // if (typeof window === 'undefined') return; // Only run on client
@@ -973,6 +1028,16 @@ onMounted(async () => {
         .setLngLat([longitude, latitude])
         .setHTML('<h3 class="font-bold">Your Location</h3>')
         .addTo(map.value)
+
+      // Check if the style is street view
+      if (map.value.getStyle().sprite && map.value.getStyle().sprite.includes('navigation-night-v1')) {
+        isStreetViewLoaded.value = true
+      } else if (map.value.getStyle().name && map.value.getStyle().name.toLowerCase().includes('navigation-night')) {
+        isStreetViewLoaded.value = true
+      } else {
+        // fallback: check style URL
+        isStreetViewLoaded.value = map.value.getStyle().sprite?.includes('navigation-night-v1') || false
+      }
     })
 
     map.value.on('error', (e) => {

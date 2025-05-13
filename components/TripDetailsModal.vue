@@ -9,7 +9,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b">
           <h3 class="text-2xl font-semibold text-gray-900">
-            Trip Details
+            {{ trip?.title }}
           </h3>
           <button 
             @click="close"
@@ -26,11 +26,9 @@
           <!-- Trip Info -->
           <div class="mx-6 my-2">
             <div class="grid grid-cols-2 gap-4">
-              <div>
-                <h4 class="text-lg font-medium text-gray-900">{{ trip?.title }}</h4>
+              <div class="text-left">
                 <p class="text-sm text-gray-500">
-                  {{ trip?.created_at ? new Date(trip.created_at).toLocaleDateString() : '' }} at 
-                  {{ trip?.created_at ? new Date(trip.created_at).toLocaleTimeString() : '' }}
+                  {{ trip?.created_at ? new Date(trip.created_at).toLocaleDateString() : '' }} at {{ trip?.created_at ? new Date(trip.created_at).toLocaleTimeString() : '' }}
                 </p>
               </div>
               <div class="text-right">
@@ -52,26 +50,28 @@
           </div>
         <div class="p-6">
           <!-- Trip Details -->
-          <div class="grid grid-cols-2 gap-6">
-            <div>
-              <h4 class="text-lg font-medium text-gray-900 mb-4">Trip Information</h4>
-              <dl class="space-y-3">
-                <div>
-                  <dt class="text-sm font-medium text-gray-500">Trip Duration</dt>
-                  <dd class="text-base text-gray-900">{{ calculateTripDuration }}</dd>
-                </div>
-                <div v-if="trip?.distance">
-                  <dt class="text-sm font-medium text-gray-500">Distance</dt>
-                  <dd class="text-base text-gray-900">{{ formatDistance(trip.distance) }}</dd>
-                </div>
-                <div v-if="trip?.amount">
-                  <dt class="text-sm font-medium text-gray-500">{{ trip.transaction_type === 'spending' ? 'Amount Spent' : 'Amount Earned' }}</dt>
-                  <dd class="text-base text-gray-900">${{ trip.amount }}</dd>
-                </div>
-              </dl>
+          <div class="grid grid-cols-1 gap-3">
+            <div class="grid grid-cols-3 md:grid-cols-3 gap-3 mb-6">
+              <div class="flex flex-col items-center">
+                <dt class="text-sm font-medium text-gray-500">Duration</dt>
+                <dd class="text-2xl text-gray-900 font-bold">{{ calculateTripDuration }}</dd>
+              </div>
+              <div class="flex flex-col items-center border-x border-gray-200">
+                <dt class="text-sm font-medium text-gray-500">Distance</dt>
+                <dd class="text-2xl text-gray-900 font-bold">{{ formatDistanceMiles(trip?.distance) }}</dd>
+              </div>
+              <div class="flex flex-col items-center">
+                <dt class="text-sm font-medium text-gray-500">Amount</dt>
+                <dd class="text-2xl text-gray-900 font-bold">
+                  <span v-if="trip?.amount !== undefined && trip?.amount !== null">
+                    £{{ trip.amount }}
+                  </span>
+                  <span v-else>N/A</span>
+                </dd>
+              </div>
             </div>
-            <div>
-              <h4 class="text-lg font-medium text-gray-900 mb-4">Notes</h4>
+            <div class="text-center">
+              <h4 class="text-lg font-medium text-gray-900 mb-2">Notes</h4>
               <p v-if="trip?.notes" class="text-gray-600">{{ trip.notes }}</p>
               <p v-else class="text-gray-500 italic">No notes for this trip</p>
             </div>
@@ -100,10 +100,10 @@ const close = () => {
   emit('close')
 }
 
-const formatDistance = (meters) => {
+const formatDistanceMiles = (meters) => {
   if (!meters) return 'N/A'
-  const kilometers = meters / 1000
-  return `${kilometers.toFixed(1)} km`
+  const miles = meters / 1609.344
+  return `${miles.toFixed(2)}mi`
 }
 
 // Calculate trip duration from created_at and end_time

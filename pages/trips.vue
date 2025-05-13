@@ -5,7 +5,7 @@
         <!-- Fixed Header -->
         <div class="p-6 border-b">
           <div class="flex justify-between items-center">
-            <h1 class="text-3xl font-bold">Past Trips</h1>
+            <h1 class="text-3xl font-bold">Trips</h1>
             <div class="flex space-x-4">
               <!-- Month Dropdown -->
               <select 
@@ -76,7 +76,7 @@
                   <div 
                     v-for="trip in dayTrips" 
                     :key="trip.id" 
-                    class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors duration-150"
+                    class="border rounded-lg p-4 hover:bg-gray-500 cursor-pointer transition-colors duration-150"
                     @click="openTripDetails(trip)"
                   >
                     <div class="flex justify-between items-start">
@@ -89,9 +89,9 @@
                       <div class="text-right">
                         <span class="inline-block px-2 py-1 text-xs rounded-full" 
                               :class="{
-                                'bg-green-100 text-green-800': trip.transport_type === 'walk',
-                                'bg-blue-100 text-blue-800': trip.transport_type === 'cycle',
-                                'bg-purple-100 text-purple-800': trip.transport_type === 'drive'
+                                'bg-green-300 text-green-800': trip.transport_type === 'walk',
+                                'bg-blue-300 text-blue-800': trip.transport_type === 'cycle',
+                                'bg-purple-300 text-purple-800': trip.transport_type === 'drive'
                               }">
                           {{ trip.transport_type }}
                         </span>
@@ -99,7 +99,7 @@
                     </div>
                     <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
                       <p v-if="trip.amount">
-                        {{ trip.transaction_type === 'spending' ? 'Spent' : 'Earned' }}: ${{ trip.amount }}
+                        {{ trip.transaction_type === 'spending' ? 'Spent' : 'Earned' }}: £{{ trip.amount }}
                       </p>
                       <p v-if="trip.notes" class="mt-1">{{ trip.notes }}</p>
                     </div>

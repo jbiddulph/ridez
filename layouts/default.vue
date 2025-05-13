@@ -2,11 +2,11 @@
   <div class="min-h-screen bg-gray-100 dark:bg-gray-900 pb-16">
     <slot />
     <!-- Bottom Tab Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50">
-      <div class="flex justify-around items-center h-20 max-w-screen-lg mx-auto">
+    <nav class="fixed bottom-0 left-0 right-0 bg-gray-100 dark:bg-gray-900 border-t-2 border-gray-200 dark:border-gray-700 z-50">
+      <div class="flex justify-around items-center h-[100px] max-w-screen-lg mx-auto">
         <NuxtLink 
           to="/trips" 
-          class="flex flex-col items-center justify-center w-full h-full text-gray-600 hover:text-blue-600"
+          class="flex flex-col items-center justify-center w-full h-full text-gray-600 dark:hover:text-[#d8c856] hover:text-[#af9f29] border-r border-gray-200 dark:border-gray-700"
           :class="{ 'pointer-events-none opacity-50': isTracking }"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -17,7 +17,7 @@
 
         <NuxtLink 
           to="/about" 
-          class="flex flex-col items-center justify-center w-full h-full text-gray-600 hover:text-blue-600"
+          class="flex flex-col items-center justify-center w-full h-full text-gray-600 dark:hover:text-[#d8c856] hover:text-[#af9f29]"
           :class="{ 'pointer-events-none opacity-50': isTracking }"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -28,10 +28,10 @@
 
         <NuxtLink 
           to="/" 
-          class="flex flex-col items-center justify-center w-full h-full text-gray-600 hover:text-blue-600"
+          class="flex flex-col items-center justify-center w-full h-full text-gray-600 dark:hover:text-[#d8c856] hover:text-[#af9f29] border-x-2 border-gray-200 dark:border-gray-700"
           :class="{ 'pointer-events-none opacity-50': isTracking }"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.382V5.618a2 2 0 011.553-1.946l5.447-2.724a2 2 0 011.894 0l5.447 2.724A2 2 0 0121 5.618v9.764a2 2 0 01-1.553 1.946L15 20m-6 0v-8m6 8v-8" />
           </svg>
           <span class="text-sm mt-1">Map</span>
@@ -39,7 +39,7 @@
 
         <NuxtLink 
           to="/reports" 
-          class="flex flex-col items-center justify-center w-full h-full text-gray-600 hover:text-blue-600"
+          class="flex flex-col items-center justify-center w-full h-full text-gray-600 dark:hover:text-[#d8c856] hover:text-[#af9f29]"
           :class="{ 'pointer-events-none opacity-50': isTracking }"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -50,7 +50,7 @@
 
         <NuxtLink 
           to="/settings" 
-          class="flex flex-col items-center justify-center w-full h-full text-gray-600 hover:text-blue-600"
+          class="flex flex-col items-center justify-center w-full h-full text-gray-600 dark:hover:text-[#d8c856] hover:text-[#af9f29] border-l border-gray-200 dark:border-gray-700"
           :class="{ 'pointer-events-none opacity-50': isTracking }"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -80,7 +80,7 @@ onMounted(() => {
 <style>
 /* Add any layout-specific styles here */
 .router-link-active {
-  @apply text-blue-600;
+  @apply text-[#6c6217];
 }
 
 /* Ensure the navigation is visible on mobile devices */
