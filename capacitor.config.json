@@ -1,5 +1,5 @@
 {
-    "appId": "com.tripz.app",
+    "appId": "com.jbiddulph.tripz",
     "appName": "Tripz",
     "webDir": "dist",
     "server": {
