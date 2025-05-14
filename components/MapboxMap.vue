@@ -215,7 +215,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Geolocation } from '@capacitor/geolocation'
@@ -260,6 +260,18 @@ const { isDarkMode, fetchDarkMode } = useDarkMode()
 const MARKER_INTERVAL_METERS = 20 // Change back to 20
 const isStreetViewLoaded = ref(false)
 
+// Add a computed property for currency symbol
+const currencySymbol = computed(() => {
+  switch ((markerPreferences.value.currency || '').toUpperCase()) {
+    case 'GBP': return '£'
+    case 'USD': return '$'
+    case 'EUR': return '€'
+    case 'AUD': return 'A$'
+    case 'CAD': return 'C$'
+    default: return markerPreferences.value.currency || '£'
+  }
+})
+
 // Function to fetch user marker preferences
 const fetchMarkerPreferences = async () => {
   if (!user.value) return
@@ -268,7 +280,7 @@ const fetchMarkerPreferences = async () => {
     console.log('Fetching marker settings for user:', user.value.id)
     const { data, error: fetchError } = await client
       .from('ridez_settings')
-      .select('marker_color, marker_scale, my_icon')
+      .select('marker_color, marker_scale, my_icon, currency')
       .eq('user_id', user.value.id)
       .single()
 
@@ -295,7 +307,8 @@ const fetchMarkerPreferences = async () => {
         markerPreferences.value = {
           marker_color: newSettings.marker_color,
           marker_scale: newSettings.marker_scale,
-          my_icon: newSettings.my_icon
+          my_icon: newSettings.my_icon,
+          currency: newSettings.currency || 'GBP'
         }
       } else {
         console.error('Error fetching marker settings:', fetchError)
@@ -306,7 +319,8 @@ const fetchMarkerPreferences = async () => {
       markerPreferences.value = {
         marker_color: data.marker_color,
         marker_scale: data.marker_scale,
-        my_icon: data.my_icon
+        my_icon: data.my_icon,
+        currency: data.currency || 'GBP'
       }
 
       // Update any existing markers with new preferences
@@ -385,7 +399,8 @@ const updateMarkerPreferences = async (newColor, newScale) => {
     markerPreferences.value = {
       marker_color: result.marker_color,
       marker_scale: result.marker_scale,
-      my_icon: result.my_icon
+      my_icon: result.my_icon,
+      currency: result.currency || 'GBP'
     }
 
     // Update existing markers

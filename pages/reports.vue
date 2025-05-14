@@ -52,14 +52,14 @@
               <tbody>
                 <tr v-for="row in chartData" :key="'earn-' + row.day">
                   <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.day }}</td>
-                  <td class="px-4 py-2 text-green-900 dark:text-green-300">{{ row.earning.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-green-900 dark:text-green-300">{{ currencySymbol }}{{ row.earning.toFixed(2) }}</td>
                   <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.earningTrips }}</td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr class="bg-gray-50 dark:bg-gray-700">
                   <td class="px-4 py-2 font-bold text-gray-900 dark:text-white">Total</td>
-                  <td class="px-4 py-2 text-green-900 dark:text-green-300 font-bold">{{ earningsTotal.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-green-900 dark:text-green-300 font-bold">{{ currencySymbol }}{{ earningsTotal.toFixed(2) }}</td>
                   <td class="px-4 py-2 text-gray-900 dark:text-white font-bold">{{ earningsTripsTotal }}</td>
                 </tr>
               </tfoot>
@@ -80,14 +80,14 @@
               <tbody>
                 <tr v-for="row in chartData" :key="'spend-' + row.day">
                   <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.day }}</td>
-                  <td class="px-4 py-2 text-red-900 dark:text-red-300">{{ row.spending.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-red-900 dark:text-red-300">{{ currencySymbol }}{{ row.spending.toFixed(2) }}</td>
                   <td class="px-4 py-2 text-gray-900 dark:text-white">{{ row.spendingTrips }}</td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr class="bg-gray-50 dark:bg-gray-700">
                   <td class="px-4 py-2 font-bold text-gray-900 dark:text-white">Total</td>
-                  <td class="px-4 py-2 text-red-900 dark:text-red-300 font-bold">{{ spendingTotal.toFixed(2) }}</td>
+                  <td class="px-4 py-2 text-red-900 dark:text-red-300 font-bold">{{ currencySymbol }}{{ spendingTotal.toFixed(2) }}</td>
                   <td class="px-4 py-2 text-gray-900 dark:text-white font-bold">{{ spendingTripsTotal }}</td>
                 </tr>
               </tfoot>
@@ -100,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, inject } from 'vue'
 import * as am5 from '@amcharts/amcharts5'
 import * as am5xy from '@amcharts/amcharts5/xy'
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated'
@@ -124,6 +124,28 @@ const chartData = ref([])
 
 const earningsTotal = computed(() => chartData.value.reduce((sum, row) => sum + row.earning, 0))
 const spendingTotal = computed(() => chartData.value.reduce((sum, row) => sum + row.spending, 0))
+
+const currency = ref('GBP')
+
+const currencySymbol = computed(() => {
+  switch (currency.value) {
+    case 'USD': return '$'
+    case 'EUR': return '€'
+    case 'AUD': return 'A$'
+    case 'CAD': return 'C$'
+    default: return '£'
+  }
+})
+
+const loadCurrency = async () => {
+  if (!user.value) return
+  const { data, error } = await client
+    .from('ridez_settings')
+    .select('currency')
+    .eq('user_id', user.value.id)
+    .single()
+  if (data && data.currency) currency.value = data.currency
+}
 
 const fetchData = async () => {
   if (!user.value) return []
@@ -261,6 +283,7 @@ const tabs = [
 const activeTab = ref('chart')
 
 onMounted(() => {
+  loadCurrency()
   renderChart()
 })
 

@@ -64,7 +64,7 @@
                 <dt class="text-sm font-medium text-gray-500">Amount</dt>
                 <dd class="text-2xl text-gray-900 font-bold">
                   <span v-if="trip?.amount !== undefined && trip?.amount !== null">
-                    £{{ trip.amount }}
+                    {{ currencySymbol }}{{ trip.amount }}
                   </span>
                   <span v-else>N/A</span>
                 </dd>
@@ -83,9 +83,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, inject, provide } from 'vue'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { useSupabaseUser, useSupabaseClient } from '#imports'
 
 const props = defineProps({
   isOpen: Boolean,
@@ -95,6 +96,37 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 const mapContainer = ref(null)
 let map = null
+
+const user = useSupabaseUser()
+const client = useSupabaseClient()
+const currency = ref('GBP') // default
+
+// Fetch the user's currency from settings
+const fetchCurrency = async () => {
+  if (!user.value) return
+  const { data } = await client
+    .from('ridez_settings')
+    .select('currency')
+    .eq('user_id', user.value.id)
+    .single()
+  if (data && data.currency) currency.value = data.currency
+}
+onMounted(fetchCurrency)
+watch(user, fetchCurrency)
+
+const currencySymbol = computed(() => {
+  switch ((currency.value || '').toUpperCase()) {
+    case 'GBP': return '£'
+    case 'USD': return '$'
+    case 'EUR': return '€'
+    case 'AUD': return 'A$'
+    case 'CAD': return 'C$'
+    default: return currency.value || '£'
+  }
+})
+
+// Provide it to all children
+provide('currencySymbol', currencySymbol)
 
 const close = () => {
   emit('close')

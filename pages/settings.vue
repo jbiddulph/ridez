@@ -167,6 +167,23 @@
             />
           </div>
 
+          <!-- Currency Selector -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Currency
+            </label>
+            <select
+              v-model="currency"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="GBP">GBP (£)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="AUD">AUD (A$)</option>
+              <option value="CAD">CAD (C$)</option>
+            </select>
+          </div>
+
           <!-- Car Icon -->
           <div class="mb-6">
             <label class="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Car Icon</label>
@@ -256,6 +273,7 @@ const markerColor = ref('#00FF00')
 const markerScale = ref(0.5)
 const wakeLock = ref(null)
 const { isDarkMode, fetchDarkMode, setDarkMode } = useDarkMode()
+const currency = ref('GBP')
 
 const markerPreferences = reactive({ my_icon: null })
 
@@ -278,7 +296,7 @@ const loadSettings = async () => {
     console.log('[DEBUG] Loading settings for user:', user.value.id)
     const { data, error } = await client
       .from('ridez_settings')
-      .select('marker_color, marker_scale, my_icon')
+      .select('marker_color, marker_scale, my_icon, currency')
       .eq('user_id', user.value.id)
       .single()
 
@@ -291,6 +309,7 @@ const loadSettings = async () => {
       markerColor.value = data.marker_color || '#00FF00'
       markerScale.value = data.marker_scale || 0.5
       markerPreferences.my_icon = data.my_icon ?? null
+      currency.value = data.currency || 'GBP'
     } else {
       console.log('[DEBUG] No data found for user, using defaults')
     }
@@ -325,7 +344,8 @@ const saveSettings = async () => {
         marker_color: markerColor.value,
         marker_scale: markerScale.value,
         dark_mode: isDarkMode.value,
-        my_icon: markerPreferences.my_icon
+        my_icon: markerPreferences.my_icon,
+        currency: currency.value
       }, { onConflict: 'user_id' })
 
     if (error) throw error

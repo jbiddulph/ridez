@@ -99,7 +99,21 @@
                     </div>
                     <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
                       <p v-if="trip.amount">
-                        {{ trip.transaction_type === 'spending' ? 'Spent' : 'Earned' }}: £{{ trip.amount }}
+                        <span
+                          v-if="trip.transaction_type === 'earning'"
+                          class="text-green-700 dark:text-green-400 font-semibold"
+                        >
+                          Earned: {{ currencySymbol }}{{ trip.amount }}
+                        </span>
+                        <span
+                          v-else-if="trip.transaction_type === 'spending'"
+                          class="text-red-700 dark:text-red-400 font-semibold"
+                        >
+                          Spent: {{ currencySymbol }}{{ trip.amount }}
+                        </span>
+                        <span v-else>
+                          {{ currencySymbol }}{{ trip.amount }}
+                        </span>
                       </p>
                       <p v-if="trip.notes" class="mt-1">{{ trip.notes }}</p>
                     </div>
@@ -122,6 +136,8 @@
 </template>
 
 <script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useSupabaseClient, useSupabaseUser } from '#imports'
 const client = useSupabaseClient()
 const user = useSupabaseUser()
 const router = useRouter()
@@ -129,6 +145,7 @@ const trips = ref([])
 const loading = ref(true)
 const error = ref('')
 const selectedTrip = ref(null)
+const currency = ref('GBP')
 
 // Month and year selection
 const months = [
@@ -177,6 +194,7 @@ onMounted(async () => {
     }
 
     await fetchTrips()
+    await loadCurrency()
   } catch (err) {
     console.error('Error fetching trips:', err)
     error.value = 'Error loading trips: ' + err.message
@@ -258,5 +276,25 @@ const openTripDetails = async (trip) => {
     console.error('Error fetching trip details:', err)
     error.value = 'Error loading trip details: ' + err.message
   }
+}
+
+const currencySymbol = computed(() => {
+  switch (currency.value) {
+    case 'USD': return '$'
+    case 'EUR': return '€'
+    case 'AUD': return 'A$'
+    case 'CAD': return 'C$'
+    default: return '£'
+  }
+})
+
+const loadCurrency = async () => {
+  if (!user.value) return
+  const { data, error } = await client
+    .from('ridez_settings')
+    .select('currency')
+    .eq('user_id', user.value.id)
+    .single()
+  if (data && data.currency) currency.value = data.currency
 }
 </script> 
