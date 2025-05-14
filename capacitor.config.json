@@ -1,5 +1,5 @@
 {
-    "appId": "com.ridez.app",
+    "appId": "com.tripz.app",
     "appName": "Tripz",
     "webDir": "dist",
     "server": {
