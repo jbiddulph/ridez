@@ -256,15 +256,15 @@
 
         <!-- Delete Account Confirmation Dialog -->
         <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full">
+          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full m-6 border-2 border-red-200 dark:border-red-700">
             <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Confirm Account Deletion</h3>
             <p class="mb-4 text-gray-700 dark:text-gray-200">
               This will <span class="font-semibold text-red-600">permanently delete</span>:
-              <ul class="list-disc ml-6 mt-2 text-sm">
+              <ul class="list-disc ml-6 mt-2 text-sm text-gray-700 dark:text-gray-200">
                 <li>Your account and login credentials</li>
-                <li>All your rides (ridez_rides)</li>
-                <li>All your routes (ridez_routes)</li>
-                <li>Your settings and preferences (ridez_settings)</li>
+                <li>All your trips</li>
+                <li>All your reports</li>
+                <li>Your settings and preferences</li>
               </ul>
               <span class="block mt-2 text-red-600 font-semibold">This action cannot be undone.</span>
             </p>
@@ -515,7 +515,7 @@ const deleteAccount = async () => {
     // Delete from ridez_settings
     const { error: settingsError } = await client.from('ridez_settings').delete().eq('user_id', user.value.id)
     if (settingsError) throw settingsError
-    // Call server-side API to delete user from auth
+    // Call server-side API to delete user from auth (no Authorization header)
     const res = await fetch('https://ridez-66c2d14c6c66.herokuapp.com/api/delete-account', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -523,7 +523,6 @@ const deleteAccount = async () => {
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      console.log('Delete response:', res.status, data);
       throw new Error(data.error || 'Failed to delete user from authentication')
     }
     // Sign out and redirect
