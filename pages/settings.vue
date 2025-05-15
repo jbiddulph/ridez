@@ -516,7 +516,7 @@ const deleteAccount = async () => {
     const { error: settingsError } = await client.from('ridez_settings').delete().eq('user_id', user.value.id)
     if (settingsError) throw settingsError
     // Call server-side API to delete user from auth
-    const res = await fetch('/api/delete-account', {
+    const res = await fetch('https://ridez-66c2d14c6c66.herokuapp.com/api/delete-account', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: user.value.id })
