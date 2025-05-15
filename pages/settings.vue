@@ -506,6 +506,14 @@ const deleteAccount = async () => {
   deleteLoading.value = true
   deleteError.value = ''
   try {
+    // Get the current session and access token
+    const { data: { session } } = await client.auth.getSession();
+    const token = session?.access_token;
+    if (!token) {
+      deleteError.value = 'You must be logged in to delete your account.';
+      deleteLoading.value = false;
+      return;
+    }
     // Delete from ridez_rides
     const { error: ridesError } = await client.from('ridez_rides').delete().eq('user_id', user.value.id)
     if (ridesError) throw ridesError
@@ -515,16 +523,20 @@ const deleteAccount = async () => {
     // Delete from ridez_settings
     const { error: settingsError } = await client.from('ridez_settings').delete().eq('user_id', user.value.id)
     if (settingsError) throw settingsError
-    // Call server-side API to delete user from auth
+    // Call server-side API to delete user from auth, with Authorization header
     const res = await fetch('https://ridez-66c2d14c6c66.herokuapp.com/api/delete-account', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({ user_id: user.value.id })
     })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      console.log('Delete response:', res.status, data);
-      throw new Error(data.error || 'Failed to delete user from authentication')
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) {
+      deleteError.value = data.error || 'Failed to delete user from authentication';
+      deleteLoading.value = false;
+      return;
     }
     // Sign out and redirect
     await client.auth.signOut()
