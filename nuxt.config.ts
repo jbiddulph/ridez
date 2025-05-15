@@ -16,15 +16,9 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
-    preset: 'static',
-    prerender: {
-      crawlLinks: true,
-      routes: ['/']
-    },
-    output: {
-      dir: './dist',
-      publicDir: './dist'
-    }
+    // For Heroku deployment, we always use node-server preset
+    preset: 'node-server'
+    // We'll handle Capacitor builds separately via npm scripts
   },
   ssr: true,
   app: {
