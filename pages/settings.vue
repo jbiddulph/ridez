@@ -256,17 +256,17 @@
 
         <!-- Delete Account Confirmation Dialog -->
         <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full m-6 border-2 border-red-200 dark:border-red-700">
+          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full m-6 border-2 border-red-500 dark:border-red-500">
             <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Confirm Account Deletion</h3>
             <p class="mb-4 text-gray-700 dark:text-gray-200">
-              This will <span class="font-semibold text-red-600">permanently delete</span>:
+              This will <span class="font-semibold">permanently delete</span>:
               <ul class="list-disc ml-6 mt-2 text-sm text-gray-700 dark:text-gray-200">
                 <li>Your account and login credentials</li>
                 <li>All your trips</li>
                 <li>All your reports</li>
                 <li>Your settings and preferences</li>
               </ul>
-              <span class="block mt-2 text-red-600 font-semibold">This action cannot be undone.</span>
+              <span class="block my-2 text-red-600 font-semibold">This action cannot be undone.</span>
             </p>
             <div v-if="deleteError" class="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded">{{ deleteError }}</div>
             <div class="flex justify-end gap-2">
