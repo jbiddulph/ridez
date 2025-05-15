@@ -256,15 +256,15 @@
 
         <!-- Delete Account Confirmation Dialog -->
         <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full">
+          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full m-4 border-2 border-red-600">
             <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Confirm Account Deletion</h3>
             <p class="mb-4 text-gray-700 dark:text-gray-200">
               This will <span class="font-semibold text-red-600">permanently delete</span>:
-              <ul class="list-disc ml-6 mt-2 text-sm">
+              <ul class="list-disc ml-6 mt-2 text-sm text-gray-900 dark:text-gray-200">
                 <li>Your account and login credentials</li>
-                <li>All your rides (ridez_rides)</li>
-                <li>All your routes (ridez_routes)</li>
-                <li>Your settings and preferences (ridez_settings)</li>
+                <li>All your trips</li>
+                <li>All your reports</li>
+                <li>Your settings and preferences</li>
               </ul>
               <span class="block mt-2 text-red-600 font-semibold">This action cannot be undone.</span>
             </p>
@@ -349,9 +349,16 @@ const loadSettings = async () => {
 }
 
 // Call on mount
-onMounted(() => {
+onMounted(async () => {
   loadSettings()
   fetchDarkMode()
+  // Restore and log Supabase session on mount
+  const { data: { session } } = await client.auth.getSession();
+  console.log('Session on mount:', session);
+  if (!session) {
+    alert('Your session has expired or you are not logged in. Please log in again.');
+    // Optionally, redirect to login or show login form here
+  }
 })
 
 // Watch for user changes
@@ -502,15 +509,19 @@ const deleteLoading = ref(false)
 const deleteError = ref('')
 
 const deleteAccount = async () => {
-  if (!user.value) return
+  if (!user.value) {
+    alert('You must be logged in to delete your account.');
+    return;
+  }
   deleteLoading.value = true
   deleteError.value = ''
   try {
     // Get the current session and access token
     const { data: { session } } = await client.auth.getSession();
+    console.log('Supabase session:', session);
     const token = session?.access_token;
-    if (!token) {
-      deleteError.value = 'You must be logged in to delete your account.';
+    if (!session || !token) {
+      alert('You must be logged in to delete your account. Please log in again.');
       deleteLoading.value = false;
       return;
     }
