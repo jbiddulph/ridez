@@ -523,6 +523,7 @@ const deleteAccount = async () => {
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
+      console.log('Delete response:', res.status, data);
       throw new Error(data.error || 'Failed to delete user from authentication')
     }
     // Sign out and redirect
