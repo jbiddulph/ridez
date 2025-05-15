@@ -242,10 +242,40 @@
           <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Account Actions</h2>
           <button
             @click="handleSignOut"
-            class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            class="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
           >
             Sign Out
           </button>
+          <button
+            @click="showDeleteConfirm = true"
+            class="w-full bg-red-700 text-white py-2 px-4 rounded-md hover:bg-red-800 focus:outline-none focus:ring-2 focus:ring-red-600"
+          >
+            Delete Account & All Data
+          </button>
+        </div>
+
+        <!-- Delete Account Confirmation Dialog -->
+        <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full">
+            <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Confirm Account Deletion</h3>
+            <p class="mb-4 text-gray-700 dark:text-gray-200">
+              This will <span class="font-semibold text-red-600">permanently delete</span>:
+              <ul class="list-disc ml-6 mt-2 text-sm">
+                <li>Your account and login credentials</li>
+                <li>All your rides (ridez_rides)</li>
+                <li>All your routes (ridez_routes)</li>
+                <li>Your settings and preferences (ridez_settings)</li>
+              </ul>
+              <span class="block mt-2 text-red-600 font-semibold">This action cannot be undone.</span>
+            </p>
+            <div v-if="deleteError" class="mb-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded">{{ deleteError }}</div>
+            <div class="flex justify-end gap-2">
+              <button @click="showDeleteConfirm = false" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white">Cancel</button>
+              <button @click="deleteAccount" :disabled="deleteLoading" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                {{ deleteLoading ? 'Deleting...' : 'Yes, Delete Everything' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -464,6 +494,46 @@ const releaseWakeLock = async () => {
     } catch (err) {
       console.error('Error releasing web wake lock:', err)
     }
+  }
+}
+
+const showDeleteConfirm = ref(false)
+const deleteLoading = ref(false)
+const deleteError = ref('')
+
+const deleteAccount = async () => {
+  if (!user.value) return
+  deleteLoading.value = true
+  deleteError.value = ''
+  try {
+    // Delete from ridez_rides
+    const { error: ridesError } = await client.from('ridez_rides').delete().eq('user_id', user.value.id)
+    if (ridesError) throw ridesError
+    // Delete from ridez_routes
+    const { error: routesError } = await client.from('ridez_routes').delete().eq('user_id', user.value.id)
+    if (routesError) throw routesError
+    // Delete from ridez_settings
+    const { error: settingsError } = await client.from('ridez_settings').delete().eq('user_id', user.value.id)
+    if (settingsError) throw settingsError
+    // Call server-side API to delete user from auth
+    const res = await fetch('/api/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.value.id })
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      throw new Error(data.error || 'Failed to delete user from authentication')
+    }
+    // Sign out and redirect
+    await client.auth.signOut()
+    router.push('/')
+    alert('Your account and all data have been deleted.')
+  } catch (err) {
+    deleteError.value = err.message || 'Error deleting account'
+  } finally {
+    deleteLoading.value = false
+    showDeleteConfirm.value = false
   }
 }
 </script>

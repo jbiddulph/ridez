@@ -1,24 +1,25 @@
 {
-    "appId": "com.jbiddulph.tripz",
-    "appName": "Tripz",
-    "webDir": "dist",
-    "server": {
-      "androidScheme": "https",
-      "hostname": "localhost",
-      "cleartext": true
-    },
-    "plugins": {
-      "Geolocation": {
-        "permissions": {
-          "ios": {
-            "whenInUse": "Allow $(PRODUCT_NAME) to use your location.",
-            "always": "Allow $(PRODUCT_NAME) to use your location in the background."
-          },
-          "android": {
-            "coarse": "Allow $(PRODUCT_NAME) to access your location.",
-            "fine": "Allow $(PRODUCT_NAME) to access your precise location."
-          }
+  "appId": "com.jbiddulph.tripz",
+  "appName": "Tripz",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "localhost",
+    "cleartext": true
+  },
+  "plugins": {
+    "Geolocation": {
+      "permissions": {
+        "ios": {
+          "name": "Tripz",
+          "whenInUse": "Allow $(PRODUCT_NAME) to use your location.",
+          "always": "Allow $(PRODUCT_NAME) to use your location in the background."
+        },
+        "android": {
+          "coarse": "Allow $(PRODUCT_NAME) to access your location.",
+          "fine": "Allow $(PRODUCT_NAME) to access your precise location."
         }
       }
     }
   }
+}
