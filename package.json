@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
-    "build:capacitor": "nuxt generate --preset=static --prerender --output-dir=./dist",
+    "build:capacitor": "nuxi generate && rm -rf dist && cp -r .output/public dist && cp dist/200.html dist/index.html",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
