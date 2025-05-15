@@ -256,15 +256,15 @@
 
         <!-- Delete Account Confirmation Dialog -->
         <div v-if="showDeleteConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full m-4 border-2 border-red-600">
+          <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full">
             <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Confirm Account Deletion</h3>
             <p class="mb-4 text-gray-700 dark:text-gray-200">
               This will <span class="font-semibold text-red-600">permanently delete</span>:
-              <ul class="list-disc ml-6 mt-2 text-sm text-gray-900 dark:text-gray-200">
+              <ul class="list-disc ml-6 mt-2 text-sm">
                 <li>Your account and login credentials</li>
-                <li>All your trips</li>
-                <li>All your reports</li>
-                <li>Your settings and preferences</li>
+                <li>All your rides (ridez_rides)</li>
+                <li>All your routes (ridez_routes)</li>
+                <li>Your settings and preferences (ridez_settings)</li>
               </ul>
               <span class="block mt-2 text-red-600 font-semibold">This action cannot be undone.</span>
             </p>
@@ -349,16 +349,9 @@ const loadSettings = async () => {
 }
 
 // Call on mount
-onMounted(async () => {
+onMounted(() => {
   loadSettings()
   fetchDarkMode()
-  // Restore and log Supabase session on mount
-  const { data: { session } } = await client.auth.getSession();
-  console.log('Session on mount:', session);
-  if (!session) {
-    alert('Your session has expired or you are not logged in. Please log in again.');
-    // Optionally, redirect to login or show login form here
-  }
 })
 
 // Watch for user changes
@@ -509,22 +502,10 @@ const deleteLoading = ref(false)
 const deleteError = ref('')
 
 const deleteAccount = async () => {
-  if (!user.value) {
-    alert('You must be logged in to delete your account.');
-    return;
-  }
+  if (!user.value) return
   deleteLoading.value = true
   deleteError.value = ''
   try {
-    // Get the current session and access token
-    const { data: { session } } = await client.auth.getSession();
-    console.log('Supabase session:', session);
-    const token = session?.access_token;
-    if (!session || !token) {
-      alert('You must be logged in to delete your account. Please log in again.');
-      deleteLoading.value = false;
-      return;
-    }
     // Delete from ridez_rides
     const { error: ridesError } = await client.from('ridez_rides').delete().eq('user_id', user.value.id)
     if (ridesError) throw ridesError
@@ -534,21 +515,23 @@ const deleteAccount = async () => {
     // Delete from ridez_settings
     const { error: settingsError } = await client.from('ridez_settings').delete().eq('user_id', user.value.id)
     if (settingsError) throw settingsError
-    // Call server-side API to delete user from auth, with Authorization header
-    const res = await fetch('https://ridez-66c2d14c6c66.herokuapp.com/api/delete-account', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ user_id: user.value.id })
-    })
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.error) {
-      deleteError.value = data.error || 'Failed to delete user from authentication';
-      deleteLoading.value = false;
-      return;
-    }
+    // Call server-side API to delete user from auth
+    const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+
+  const res = await fetch('https://ridez-66c2d14c6c66.herokuapp.com/api/delete-account', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` // <-- This is required!
+    },
+    body: JSON.stringify({ user_id: user.id })
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) {
+    alert('Error deleting user: ' + (data.error || 'Unknown error'));
+    return;
+  }
     // Sign out and redirect
     await client.auth.signOut()
     router.push('/')
