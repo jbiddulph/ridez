@@ -516,22 +516,16 @@ const deleteAccount = async () => {
     const { error: settingsError } = await client.from('ridez_settings').delete().eq('user_id', user.value.id)
     if (settingsError) throw settingsError
     // Call server-side API to delete user from auth
-    const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-
-  const res = await fetch('https://ridez-66c2d14c6c66.herokuapp.com/api/delete-account', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}` // <-- This is required!
-    },
-    body: JSON.stringify({ user_id: user.id })
-  });
-  const data = await res.json();
-  if (!res.ok || data.error) {
-    alert('Error deleting user: ' + (data.error || 'Unknown error'));
-    return;
-  }
+    const res = await fetch('https://ridez-66c2d14c6c66.herokuapp.com/api/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.value.id })
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      console.log('Delete response:', res.status, data);
+      throw new Error(data.error || 'Failed to delete user from authentication')
+    }
     // Sign out and redirect
     await client.auth.signOut()
     router.push('/')
