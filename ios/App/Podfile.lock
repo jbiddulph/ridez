@@ -11,6 +11,8 @@ PODS:
     - IONGeolocationLib (~> 1.0)
   - CapacitorScreenOrientation (7.0.1):
     - Capacitor
+  - CordovaPlugins (7.2.0):
+    - CapacitorCordova
   - IONGeolocationLib (1.0.0)
 
 DEPENDENCIES:
@@ -20,6 +22,7 @@ DEPENDENCIES:
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
   - "CapacitorScreenOrientation (from `../../node_modules/@capacitor/screen-orientation`)"
+  - CordovaPlugins (from `../capacitor-cordova-ios-plugins`)
 
 SPEC REPOS:
   trunk:
@@ -38,6 +41,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/geolocation"
   CapacitorScreenOrientation:
     :path: "../../node_modules/@capacitor/screen-orientation"
+  CordovaPlugins:
+    :path: "../capacitor-cordova-ios-plugins"
 
 SPEC CHECKSUMS:
   Capacitor: 03bc7cbdde6a629a8b910a9d7d78c3cc7ed09ea7
@@ -46,8 +51,9 @@ SPEC CHECKSUMS:
   CapacitorCordova: 5967b9ba03915ef1d585469d6e31f31dc49be96f
   CapacitorGeolocation: b005744861676af9abd19a0682f0b1af32cc2c99
   CapacitorScreenOrientation: 6d989dff97440c7bfa78deee13952d7fb03c27f3
+  CordovaPlugins: b6e575b858863244576981844c2495cf70db5c69
   IONGeolocationLib: 81f33f88d025846946de2cf63b0c7628e7c6bc9d
 
-PODFILE CHECKSUM: 3089cfdb744b1702c8b78212dd092583cd68f97b
+PODFILE CHECKSUM: dd1b58eac6983fcefa47c4b5ec0cf80f9ed86e0b
 
 COCOAPODS: 1.16.2
