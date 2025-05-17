@@ -231,7 +231,16 @@ import { useRouter } from 'vue-router'
 import { useTripTracking } from '~/composables/useTripTracking'
 import { useDarkMode } from '~/composables/useDarkMode'
 import { KeepAwake } from '@capacitor-community/keep-awake'
+import { registerPlugin } from '@capacitor/core';
 
+const AppTrackingTransparency = registerPlugin('AppTrackingTransparency', {
+  web: () => ({
+    async requestPermission() {
+      alert('ATT is only available on iOS devices.');
+      return { status: 'unavailable' };
+    }
+  })
+});
 const mapContainer = ref(null)
 const map = ref(null)
 const loading = ref(true)
@@ -1103,17 +1112,17 @@ onUnmounted(async () => {
   }
 })
 
-function requestATT() {
-  const { AppTrackingTransparency } = window.Capacitor.Plugins;
-  if (!AppTrackingTransparency) {
+async function requestATT() {
+  if (!AppTrackingTransparency || !AppTrackingTransparency.requestPermission) {
     alert('ATT plugin not available');
     return;
   }
-  AppTrackingTransparency.requestPermission().then(result => {
+  try {
+    const result = await AppTrackingTransparency.requestPermission();
     alert('ATT status: ' + result.status);
-  }).catch(err => {
+  } catch (err) {
     alert('Error requesting ATT: ' + (err.message || err));
-  });
+  }
 }
 </script>
 

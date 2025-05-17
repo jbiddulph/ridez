@@ -61,7 +61,6 @@
 		40BB958C2DD8ADA30055E07A /* Plugin */ = {
 			isa = PBXGroup;
 			children = (
-				40BB958D2DD8ADCE0055E07A /* Plugin.swift */,
 			);
 			path = Plugin;
 			sourceTree = "<group>";
@@ -96,6 +95,7 @@
 				504EC3131FED79650016851F /* Info.plist */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
+				40BB958D2DD8ADCE0055E07A /* Plugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
