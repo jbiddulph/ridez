@@ -2,8 +2,8 @@ import Foundation
 import Capacitor
 import AppTrackingTransparency
 
-@objc(AppTrackingTransparencyPlugin)
-public class AppTrackingTransparencyPlugin: CAPPlugin {
+@objc(AppTrackingTransparency)
+public class AppTrackingTransparency: CAPPlugin {
     @objc func requestPermission(_ call: CAPPluginCall) {
         if #available(iOS 14, *) {
             ATTrackingManager.requestTrackingAuthorization { status in

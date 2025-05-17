@@ -1104,13 +1104,12 @@ onUnmounted(async () => {
 })
 
 function requestATT() {
-  const { Plugins } = window.Capacitor || {};
-  const { AppTrackingTransparencyPlugin } = Plugins || {};
-  if (!AppTrackingTransparencyPlugin) {
+  const { AppTrackingTransparency } = window.Capacitor.Plugins;
+  if (!AppTrackingTransparency) {
     alert('ATT plugin not available');
     return;
   }
-  AppTrackingTransparencyPlugin.requestPermission().then(result => {
+  AppTrackingTransparency.requestPermission().then(result => {
     alert('ATT status: ' + result.status);
   }).catch(err => {
     alert('Error requesting ATT: ' + (err.message || err));
