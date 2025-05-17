@@ -1,5 +1,12 @@
 <template>
   <div class="relative w-full h-full">
+    <!-- ATT Permission Button -->
+    <button
+      @click="requestATT"
+      class="absolute top-4 right-4 z-50 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700"
+    >
+      Request Tracking Permission
+    </button>
     <div ref="mapContainer" class="absolute inset-0 w-full h-full"></div>
     <div v-if="error" class="absolute top-[200px] left-4 right-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded z-10">
       {{ error }}
@@ -1095,6 +1102,20 @@ onUnmounted(async () => {
     map.value.remove()
   }
 })
+
+function requestATT() {
+  const { Plugins } = window.Capacitor || {};
+  const { AppTrackingTransparencyPlugin } = Plugins || {};
+  if (!AppTrackingTransparencyPlugin) {
+    alert('ATT plugin not available');
+    return;
+  }
+  AppTrackingTransparencyPlugin.requestPermission().then(result => {
+    alert('ATT status: ' + result.status);
+  }).catch(err => {
+    alert('Error requesting ATT: ' + (err.message || err));
+  });
+}
 </script>
 
 <style>
