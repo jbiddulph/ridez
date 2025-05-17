@@ -966,6 +966,22 @@ watch(
 
 // Initialize map
 onMounted(async () => {
+
+  document.addEventListener('deviceready', function() {
+    setTimeout(function() { // Add a slight delay to ensure everything is ready
+      if (window.plugins && window.plugins.idfa) {
+        window.plugins.idfa.requestPermission(function(result) {
+          if (result === 'authorized') {
+            alert('Tracking authorized');
+          } else {
+            alert('Tracking not authorized: ' + result);
+          }
+        });
+      } else {
+        alert('IDFA plugin not available');
+      }
+    }, 1000);
+  }, false);
   // if (typeof window === 'undefined') return; // Only run on client
 
   try {
