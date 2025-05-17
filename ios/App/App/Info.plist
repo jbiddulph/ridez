@@ -24,14 +24,14 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier will be used to track previous trips</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>We need your location to track your rides even when the app is in the background</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>We need your location to track your rides</string>
 	<key>NSMotionUsageDescription</key>
 	<string>We need access to device orientation to rotate the map according to your heading</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be use to track previous trips</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
